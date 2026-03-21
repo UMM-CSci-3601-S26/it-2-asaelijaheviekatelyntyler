@@ -32,6 +32,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+// TODO: Remove user based tests and replace with tests of our code.
+
 /**
  * Some simple "tests" that demonstrate our ability to
  * connect to a Mongo database and run some basic queries
