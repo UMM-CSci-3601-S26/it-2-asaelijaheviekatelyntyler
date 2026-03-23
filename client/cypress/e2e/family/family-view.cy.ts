@@ -1,8 +1,8 @@
-import { FamilyViewPage } from '../support/family-view.po';
+import { FamilyViewPage } from '../../support/family-view.po';
 
 const page = new FamilyViewPage();
 
-describe('Family list', () => {
+describe('Family view', () => {
 
   before(() => {
     cy.task('seed:database');
@@ -25,7 +25,7 @@ describe('Family list', () => {
     page.addFamilyButton().click();
 
     // The URL should end with '/families/new'
-    cy.url().should(url => expect(url.endsWith('/family/new')).to.be.true);
+    cy.url().should(url => expect(url.endsWith('/families/new')).to.be.true);
 
     // On the page we were sent to, We should see the right title
     cy.get('.add-family-title').should('have.text', 'New Family');

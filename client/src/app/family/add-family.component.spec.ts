@@ -1,6 +1,6 @@
 import { Location } from '@angular/common';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing'; //fakeAsync, flush, tick
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { AbstractControl, FormArray, FormControl, FormGroup } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
@@ -9,6 +9,7 @@ import { MockFamilyService } from 'src/testing/family-service.mock';
 import { AddFamilyComponent } from './add-family.component';
 import { provideHttpClient } from '@angular/common/http';
 import { FamilyService } from './family.service';
+import { provideRouter } from '@angular/router';
 
 
 // Tests for the AddFamilyComponent
@@ -26,6 +27,7 @@ describe('AddFamilyComponent', () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        provideRouter([]),
         { provide: FamilyService, useClass: MockFamilyService }
       ]
     }).compileComponents().catch(error => {
@@ -296,6 +298,7 @@ describe('AddFamilyComponent#submitForm()', () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        provideRouter([]),
         { provide: FamilyService, useClass: MockFamilyService }, // A (more-async-tests) - provide + use class of the mock
         // provideRouter([
         //   { path: 'family/:id', component: FamilyViewComponent }

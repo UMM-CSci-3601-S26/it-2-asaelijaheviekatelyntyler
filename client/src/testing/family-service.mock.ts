@@ -8,8 +8,7 @@ import { FamilyService } from 'src/app/family/family.service';
   providedIn: AppComponent
 })
 export class MockFamilyService implements Pick<FamilyService, 'getFamilyById' | 'getDashboardStats' | 'getFamilies' | 'exportFamilies' | 'addFamily' | 'deleteFamily'> {
-  //'getFamily' |
-  // getFamilies: FamilyService;
+
   static testFamilies: Family[] = [
     {
       //family with one kid

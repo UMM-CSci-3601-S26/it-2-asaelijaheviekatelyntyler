@@ -2,7 +2,7 @@ import { Family } from 'src/app/family/family';
 
 export class AddFamilyPage {
 
-  private readonly url = '/family/new';
+  private readonly url = '/families/new';
   private readonly title = '.add-family-title';
   private readonly button = '[data-test=confirmAddFamilyButton]';
   private readonly snackBar = '.mat-mdc-simple-snack-bar';

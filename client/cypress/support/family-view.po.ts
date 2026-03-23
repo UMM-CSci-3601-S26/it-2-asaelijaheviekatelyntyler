@@ -1,10 +1,9 @@
-//import { FamilyRole } from 'src/app/family/family';
 
 export class FamilyViewPage {
-  private readonly baseUrl = '/family';
-  private readonly pageTitle = '.family-list-title';
+  private readonly baseUrl = '/families';
+  private readonly pageTitle = '.family-view-title';
   private readonly familyCardSelector = '.family-cards-container app-family-card';
-  private readonly familyListItemsSelector = '.family-nav-list .family-list-item';
+  private readonly familyListItemsSelector = '.family-nav-list .family-view-item';
   //private readonly profileButtonSelector = '[data-test=viewProfileButton]';
   //private readonly radioButtonSelector = '[data-test=viewTypeRadio] mat-radio-button';
   //private readonly familyRoleDropdownSelector = '[data-test=familyRoleSelect]';

@@ -1,4 +1,4 @@
-import { AddFamilyPage } from '../support/add-family.po';
+import { AddFamilyPage } from '../../support/add-family.po';
 
 describe('Add family', () => {
   const page = new AddFamilyPage();
