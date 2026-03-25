@@ -11,14 +11,19 @@
         Home
       </a>
 
+      <a mat-list-item routerLink="/dashboard" routerLinkActive="drawer-list-item-active" (click)="drawer.close()">
+        <mat-icon matListItemIcon>dashboard</mat-icon>
+        Dashboard
+      </a>
+
       <a mat-list-item routerLink="/families" routerLinkActive="drawer-list-item-active" (click)="drawer.close()">
         <mat-icon matListItemIcon>group</mat-icon>
         Families
       </a>
 
-      <a mat-list-item routerLink="/dashboard" routerLinkActive="drawer-list-item-active" (click)="drawer.close()">
-        <mat-icon matListItemIcon>dashboard</mat-icon>
-        Dashboard
+      <a mat-list-item routerLink="/inventory" routerLinkActive="drawer-list-item-active" (click)="drawer.close()">
+        <mat-icon matListItemIcon>inventory</mat-icon>
+        Inventory
       </a>
 
     </mat-nav-list>
