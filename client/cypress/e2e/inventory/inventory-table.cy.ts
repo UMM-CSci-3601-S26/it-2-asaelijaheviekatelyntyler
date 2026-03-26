@@ -1,4 +1,4 @@
-import { InventoryPage } from "../support/inv.po";
+import { InventoryPage } from "cypress/support/inventory-table.po";
 
 const page = new InventoryPage();
 const Filters_Test = {

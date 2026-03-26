@@ -10,8 +10,14 @@ import { of } from 'rxjs';
 import { Inventory } from './inventory';
 import { InventoryService } from './inventory.service';
 
+/**
+ * Test suite for the InventoryService, which handles communication with the backend API for managing inventory data.
+ * The tests cover the functionality of fetching inventory items with optional filters and deleting inventory items by ID.
+ * Each test verifies that the correct HTTP requests are made to the appropriate endpoints with the expected parameters
+ * and that the service behaves as intended when interacting with the backend API.
+ */
 describe('InventoryService', () => {
-  // A small test inventory
+  // Sample inventory data to be used in tests, representing a variety of inventory items with different attributes such as item name, brand, color, size, type, material, quantity, and notes
   const testInventory: Inventory[] = [
     {
       item: "Markers",
@@ -55,27 +61,25 @@ describe('InventoryService', () => {
   let httpClient: HttpClient;
   let httpTestingController: HttpTestingController;
 
+  // Set up the testing module for the InventoryService, including necessary imports and providers, and initialize the service and HTTP testing controller before each test
   beforeEach(() => {
-    // Set up the mock handling of the HTTP requests
     TestBed.configureTestingModule({
       imports: [],
       providers: [provideHttpClient(), provideHttpClientTesting()]
     });
-    // Construct an instance of the service with the mock
-    // HTTP client.
+
     httpClient = TestBed.inject(HttpClient);
     httpTestingController = TestBed.inject(HttpTestingController);
     inventoryService = TestBed.inject(InventoryService);
   });
 
+  // Verify that there are no outstanding HTTP requests after each test to ensure that all expected requests have been made and handled
   afterEach(() => {
-    // After every test, assert that there are no more pending requests.
     httpTestingController.verify();
   });
 
-
+  // Test to ensure getInventory() calls the correct API endpoint when called with no parameters, and that it is called exactly once
   describe('When getInventory() is called with no parameters', () => {
-
     it('calls `api/inventories`', waitForAsync(() => {
       const mockedMethod = spyOn(httpClient, 'get').and.returnValue(of(testInventory));
       inventoryService.getInventory().subscribe(() => {
@@ -89,8 +93,13 @@ describe('InventoryService', () => {
     }));
   });
 
+  /**
+   * Tests to ensure getInventory() correctly forms the HTTP request with various filter parameters, including
+   * item, brand, color, size, type, material, and combinations of these parameters. Each test verifies that the
+   * correct endpoint is called with the expected query parameters and that the service behaves as intended when
+   * fetching filtered inventory data from the backend API.
+   */
   describe('When getInventory() is called with parameters, it correctly forms the HTTP request (Javalin/Server filtering)', () => {
-
     it('correctly calls api/inventory with filter parameter \'item\'', () => {
       const mockedMethod = spyOn(httpClient, 'get').and.returnValue(of(testInventory));
 
@@ -104,6 +113,7 @@ describe('InventoryService', () => {
       });
     });
 
+    // Test to ensure getInventory() correctly calls the API endpoint with the 'brand' filter parameter, and that it is called exactly once with the correct URL and query parameters
     it('correctly calls api/inventory with filter parameter \'brand\'', () => {
       const mockedMethod = spyOn(httpClient, 'get').and.returnValue(of(testInventory));
 
@@ -117,6 +127,7 @@ describe('InventoryService', () => {
       });
     });
 
+    // Test to ensure getInventory() correctly calls the API endpoint with the 'color' filter parameter, and that it is called exactly once with the correct URL and query parameters
     it('correctly calls api/inventory with filter parameter \'color\'', () => {
       const mockedMethod = spyOn(httpClient, 'get').and.returnValue(of(testInventory));
 
@@ -130,6 +141,7 @@ describe('InventoryService', () => {
       });
     });
 
+    // Test to ensure getInventory() correctly calls the API endpoint with the 'size' filter parameter, and that it is called exactly once with the correct URL and query parameters
     it('correctly calls api/inventory with filter parameter \'size\'', () => {
       const mockedMethod = spyOn(httpClient, 'get').and.returnValue(of(testInventory));
 
@@ -143,6 +155,7 @@ describe('InventoryService', () => {
       });
     });
 
+    // Test to ensure getInventory() correctly calls the API endpoint with the 'type' filter parameter, and that it is called exactly once with the correct URL and query parameters
     it('correctly calls api/inventory with filter parameter \'type\'', () => {
       const mockedMethod = spyOn(httpClient, 'get').and.returnValue(of(testInventory));
 
@@ -156,6 +169,7 @@ describe('InventoryService', () => {
       });
     });
 
+    // Test to ensure getInventory() correctly calls the API endpoint with the 'material' filter parameter, and that it is called exactly once with the correct URL and query parameters
     it('correctly calls api/inventory with filter parameter \'material\'', () => {
       const mockedMethod = spyOn(httpClient, 'get').and.returnValue(of(testInventory));
 
@@ -169,6 +183,7 @@ describe('InventoryService', () => {
       });
     });
 
+    // Test to ensure getInventory() correctly calls the API endpoint with multiple filter parameters, and that it is called exactly once with the correct URL and query parameters
     it('correctly calls api/inventory with multiple filter parameters', () => {
       const mockedMethod = spyOn(httpClient, 'get').and.returnValue(of(testInventory));
 
@@ -195,43 +210,7 @@ describe('InventoryService', () => {
       });
     });
 
-    describe('When deleteInventory() is called', () => {
-      // Basic Behavior
-      // Service should call DELETE on the right URL, and this request is invoked exactly once.
-      it('correctly deletes an inventory item by ID', () => {
-        const mockedMethod = spyOn(httpClient, 'delete').and.returnValue(of({}));
-        const idToDelete = '12345';
-
-        inventoryService.deleteInventory(idToDelete).subscribe(() => {
-          const [url] = mockedMethod.calls.argsFor(0);
-          expect(mockedMethod)
-            .withContext('one call')
-            .toHaveBeenCalledTimes(1);
-          expect(url)
-            .withContext('talks to the correct endpoint with ID')
-            .toEqual(`${inventoryService.inventoryUrl}/${idToDelete}`);
-        });
-      });
-
-      // Guard for response semantics
-      // endpoint returns nothing (undefined / void), and we still confirm the URL shape is exactly the inventory endpoint + ID.
-      it('calls delete with the right URL and no body', () => {
-        const idToDelete = 'abc-987';
-        const mockedMethod = spyOn(httpClient, 'delete').and.returnValue(of(undefined));
-
-        inventoryService.deleteInventory(idToDelete).subscribe((body) => {
-          expect(body).toBeUndefined();
-          expect(mockedMethod)
-            .withContext('delete should be called once')
-            .toHaveBeenCalledTimes(1);
-
-          expect(mockedMethod)
-            .withContext('delete path must include ID')
-            .toHaveBeenCalledWith(`${inventoryService.inventoryUrl}/${idToDelete}`);
-        });
-      });
-    });
-
+    // Test to ensure getInventory() correctly calls the API endpoint with multiple filter parameters, and that it is called exactly once with the correct URL and query parameters
     it('correctly calls api/inventory with multiple filter parameters', () => {
       const mockedMethod = spyOn(httpClient, 'get').and.returnValue(of(testInventory));
 
@@ -258,6 +237,7 @@ describe('InventoryService', () => {
       });
     });
 
+    // Test to ensure getInventory() correctly calls the API endpoint with multiple filter parameters, and that it is called exactly once with the correct URL and query parameters
     it('correctly calls api/inventory with multiple filter parameters', () => {
       const mockedMethod = spyOn(httpClient, 'get').and.returnValue(of(testInventory));
 
@@ -287,6 +267,41 @@ describe('InventoryService', () => {
         expect(calledHttpParams.get('type'))
           .withContext('type being Spiral')
           .toEqual('Spiral');
+      });
+    });
+
+    // Test to ensure deleteInventory() correctly calls the API endpoint to delete an inventory item by ID, and that it is called exactly once with the correct URL
+    describe('When deleteInventory() is called', () => {
+      it('correctly deletes an inventory item by ID', () => {
+        const mockedMethod = spyOn(httpClient, 'delete').and.returnValue(of({}));
+        const idToDelete = '12345';
+
+        inventoryService.deleteInventory(idToDelete).subscribe(() => {
+          const [url] = mockedMethod.calls.argsFor(0);
+          expect(mockedMethod)
+            .withContext('one call')
+            .toHaveBeenCalledTimes(1);
+          expect(url)
+            .withContext('talks to the correct endpoint with ID')
+            .toEqual(`${inventoryService.inventoryUrl}/${idToDelete}`);
+        });
+      });
+
+      // Test to ensure deleteInventory() called with the correct URL and no body when deleting an inventory item by ID, and that it is called exactly once
+      it('calls delete with the right URL and no body', () => {
+        const idToDelete = 'abc-987';
+        const mockedMethod = spyOn(httpClient, 'delete').and.returnValue(of(undefined));
+
+        inventoryService.deleteInventory(idToDelete).subscribe((body) => {
+          expect(body).toBeUndefined();
+          expect(mockedMethod)
+            .withContext('delete should be called once')
+            .toHaveBeenCalledTimes(1);
+
+          expect(mockedMethod)
+            .withContext('delete path must include ID')
+            .toHaveBeenCalledWith(`${inventoryService.inventoryUrl}/${idToDelete}`);
+        });
       });
     });
   });

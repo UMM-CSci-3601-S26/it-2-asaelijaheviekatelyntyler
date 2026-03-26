@@ -1,13 +1,41 @@
+
 <div class="flex-row">
   <div class="flex-1">
-
-    <!-- Search Field (not currently in use)-->
     <mat-card class="search-card">
+      <!-- Family Header -->
       <mat-card-header>
         <mat-card-title class="family-view-title">Families</mat-card-title>
       </mat-card-header>
+
+      <!-- -->
       <mat-card-content>
+        <p class="page-description">
+          Welcome to the families page! Here, you can view all families that have requested supplies from the organization. Filtering and
+          sorting by various attributes soon to be available. In the future, functionality for manipulating families (adding/removing/editing)
+          and other similar features may be added!
+        </p>
+
+        <hr style="margin: 1rem 0;" />
+
+        <p class="filters-description">
+          Soon to be added filters!
+        </p>
+
+        <div class="filter-container">
         <!-- Search fields would go here -->
+        <!-- Preferred Filter Format (fit to css and inventory style): -->
+         <!-- <mat-form-field appearance="outline">
+                <mat-label class="filter">Item</mat-label>
+                <input matInput [ngModel]="item() ?? ''" (ngModelChange)="item.set($event?.trim() || undefined)"
+                  placeholder="contains..." data-cy="filter-item" />
+              </mat-form-field> -->
+        </div>
+
+        <div class="filter-extra">
+          <!-- Clear Filters Button
+           Note: One could use the inventory example but its best to make
+           clear a function in the component for easier maintenance -->
+        </div>
       </mat-card-content>
     </mat-card>
   </div>
@@ -24,6 +52,7 @@
     </div>
   </div>
   } @else {
+    <!-- Error Message -->
   <div class="flex-1" class="family-error">
     <mat-error>
       There was a problem loading the families. Possibly the server is down or perhaps there are network
@@ -37,12 +66,12 @@
 </div>
 
 <!-- Export CSV button -->
-<button mat-raised-button (click)="downloadCSV()">
+<button mat-raised-button (click)="downloadCSV()" matTooltipPosition="left"class="export-csv-button" data-test="exportCSVButton">
   Export CSV
 </button>
 
 <!-- Add Family Button -->
-<button mat-fab class="add-family-fab" matTooltip="Add Family" matTooltipPosition="left" routerLink="/families/new"
+<button mat-fab class="add-family-button" matTooltip="Add Family" matTooltipPosition="left" routerLink="/families/new"
   data-test="addFamilyButton">
   <mat-icon class="md-24" aria-label="Add Family">add</mat-icon>
 </button>

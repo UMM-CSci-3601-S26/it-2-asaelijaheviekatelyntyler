@@ -1,103 +1,106 @@
 <div class="flex-row">
   <div class="flex-1">
+
+    <!-- Add Inventory Form -->
     <form [formGroup]="addInventoryForm" (ngSubmit)="submitForm();">
-      <mat-card class="add-Inventory-card">
+      <mat-card class="add-inventory-card">
+
+        <!-- Add Inventory Form Header -->
         <mat-card-header>
-          <mat-card-title class="add-Inventory-title">New Inventory</mat-card-title>
+          <mat-card-title class="add-inventory-title">New Inventory</mat-card-title>
         </mat-card-header>
+
+        <!-- Form Content -->
         <mat-card-content>
           <div class="flex-col">
 
-            <!-- Inventory Item Input Field -->
+            <!-- Item Input Field -->
             <mat-form-field>
               <mat-label>Item</mat-label>
-              <input matInput formControlName="Item" required>
-              @if (formControlHasError('item')) {
-              <mat-error data-test="item">
-                {{getErrorMessage('item')}}
-              </mat-error>
-              }
+              <input matInput type="text" formControlName="item" required>
+              <mat-error data-test="itemError"
+                         *ngIf="formControlHasError('item')">{{ getErrorMessage('item') }}</mat-error>
             </mat-form-field>
 
             <!-- Description Input Field -->
             <mat-form-field>
               <mat-label>Description</mat-label>
-              <input matInput type="description" formControlName="email" required>
-              @if (formControlHasError('description')) {
-              <mat-error data-test="description">
-                {{getErrorMessage('description')}}
-              </mat-error>
-              }
+              <input matInput type="text" formControlName="description" required>
+              <mat-error data-test="descriptionError"
+                         *ngIf="formControlHasError('description')">{{ getErrorMessage('description') }}</mat-error>
             </mat-form-field>
 
-            <!-- brand Input Field -->
+            <!-- Brand Input Field -->
             <mat-form-field>
               <mat-label>Brand</mat-label>
-              <input matInput type="brand" formControlName="address" required>
-              @if (formControlHasError('brand')) {
-              <mat-error data-test="brand">
-                {{getErrorMessage('brand')}}
-              </mat-error>
-              }
+              <input matInput type="text" formControlName="brand" required>
+              <mat-error data-test="brandError"
+                         *ngIf="formControlHasError('brand')">{{ getErrorMessage('brand') }}</mat-error>
             </mat-form-field>
 
             <!-- Color Input Field -->
             <mat-form-field>
               <mat-label>Color</mat-label>
-              <input matInput type="color" formControlName="timeSlot" required>
-              @if (formControlHasError('Color')) {
-              <mat-error data-test="color">
-                {{getErrorMessage('color')}}
-              </mat-error>
-              }
+              <input matInput type="text" formControlName="color" required>
+              <mat-error data-test="colorError"
+                         *ngIf="formControlHasError('color')">{{ getErrorMessage('color') }}</mat-error>
             </mat-form-field>
 
             <!-- Size Input Field -->
             <mat-form-field>
               <mat-label>Size</mat-label>
-              <input matInput type="size" formControlName="size" required>
-              @if (formControlHasError('size')) {
-              <mat-error data-test="size">
-                {{getErrorMessage('size')}}
-              </mat-error>
-              }
+              <input matInput type="text" formControlName="size" required>
+              <mat-error data-test="sizeError"
+                         *ngIf="formControlHasError('size')">{{ getErrorMessage('size') }}</mat-error>
+            </mat-form-field>
 
             <!-- Type Input Field -->
             <mat-form-field>
-              <mat-label>Count</mat-label>
-              <input matInput type="type" formControlName="count" required>
-              @if (formControlHasError('type')) {
-              <mat-error data-test="type">
-                {{getErrorMessage('type')}}
-              </mat-error>
-              }
+              <mat-label>Type</mat-label>
+              <input matInput type="text" formControlName="type" required>
+              <mat-error data-test="typeError"
+                         *ngIf="formControlHasError('type')">{{ getErrorMessage('type') }}</mat-error>
             </mat-form-field>
 
             <!-- Material Input Field -->
             <mat-form-field>
               <mat-label>Material</mat-label>
-              <input matInput type="material" formControlName="material" required>
-              @if (formControlHasError('material')) {
-              <mat-error data-test="material">
-                {{getErrorMessage('material')}}
-              </mat-error>
-              }
+              <input matInput type="text" formControlName="material" required>
+              <mat-error data-test="materialError"
+                         *ngIf="formControlHasError('material')">{{ getErrorMessage('material') }}</mat-error>
             </mat-form-field>
 
+            <!-- Count Input Field -->
+            <mat-form-field>
+              <mat-label>Count</mat-label>
+              <input matInput type="number" formControlName="count" required min="0">
+              <mat-error data-test="countError"
+                         *ngIf="formControlHasError('count')">{{ getErrorMessage('count') }}</mat-error>
+            </mat-form-field>
 
+            <!-- Quantity Input Field -->
+            <mat-form-field>
+              <mat-label>Quantity</mat-label>
+              <input matInput type="number" formControlName="quantity" required min="0">
+              <mat-error data-test="quantityError"
+                         *ngIf="formControlHasError('quantity')">{{ getErrorMessage('quantity') }}</mat-error>
+            </mat-form-field>
 
-            <!--  -->
-
-
-        <!-- Submit Inventory Button -->
+            <!-- Notes Input Field -->
+            <mat-form-field>
+              <mat-label>Notes</mat-label>
+              <input matInput type="text" formControlName="notes">
+              <mat-error data-test="notesError"
+                         *ngIf="formControlHasError('notes')">{{ getErrorMessage('notes') }}</mat-error>
+            </mat-form-field>
+          </div>
         </mat-card-content>
-        <mat-card-actions align="end">
-          <button mat-button type="button" color="primary" [disabled]="!addInventoryForm.valid" type="submit"
-            data-test="confirmAddInventoryButton">
-            ADD Inventory
-          </button>
-        </mat-card-actions>
 
+        <!-- Form Actions -->
+        <mat-card-actions align="end">
+          <button mat-button type="submit" color="primary" [disabled]="!addInventoryForm.valid" data-test="confirmAddInventoryButton">ADD INVENTORY</button>
+          <button mat-button type="button" color="primary" routerLink="/inventory" data-test="cancelAddInventoryButton">CANCEL</button>
+        </mat-card-actions>
       </mat-card>
     </form>
   </div>

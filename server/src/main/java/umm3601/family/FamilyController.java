@@ -1,26 +1,32 @@
+// Packages
 package umm3601.family;
 
+// Static Imports
+import static com.mongodb.client.model.Filters.eq;
+
+// Java Imports
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+// Org Imports
 import org.bson.UuidRepresentation;
 import org.bson.types.ObjectId;
 import org.mongojack.JacksonMongoCollection;
 
-import io.javalin.Javalin;
-
+// Com Imports
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.result.DeleteResult;
 
+// IO Imports
+import io.javalin.Javalin;
 import io.javalin.http.BadRequestResponse;
 import io.javalin.http.NotFoundResponse;
 import io.javalin.http.Context;
 import io.javalin.http.HttpStatus;
 
-import static com.mongodb.client.model.Filters.eq;
-
+// Misc Imports
 import umm3601.Controller;
 
 /**
@@ -59,17 +65,6 @@ public class FamilyController implements Controller {
         UuidRepresentation.STANDARD);
   }
 
-  // GET /api/families
-  // Returns all registered families.
-  public void getFamilies(Context ctx) {
-    ArrayList<Family> matchingFamilies = familyCollection
-      .find()
-      .into(new ArrayList<>());
-
-    ctx.json(matchingFamilies);
-    ctx.status(HttpStatus.OK);
-  }
-
   /**
    * GET /api/families/{id}
    * Retrieves a single family by MongoDB ObjectId.
@@ -96,10 +91,23 @@ public class FamilyController implements Controller {
   }
 
   /**
+   * GET /api/families
+   * Returns all registered families.
+   */
+  public void getFamilies(Context ctx) {
+    ArrayList<Family> matchingFamilies = familyCollection
+      .find()
+      .into(new ArrayList<>());
+
+    ctx.json(matchingFamilies);
+    ctx.status(HttpStatus.OK);
+  }
+
+  /**
    * POST /api/families
    * Adds a new family registration.
    *
-   * Uses Javalin's bodyValidator to enforce:
+   * Validation ensures:
    *  - valid email format
    *
    * Future improvements (Iteration 2):
@@ -126,7 +134,7 @@ public class FamilyController implements Controller {
    * DELETE /api/families/{id}
    * Removes a family registration.
    *
-   * Returns 404 if:
+   * Returns 200 OK if deletion was successful, or 404 Not Found if:
    *  - the ID is invalid
    *  - no family with that ID exists
    */
@@ -158,7 +166,6 @@ public class FamilyController implements Controller {
    *  - total students
    *  - filterable for per district, grade, and school.
    */
-
   public void getDashboardStats(Context ctx) {
     ArrayList<Family> families = familyCollection
       .find()

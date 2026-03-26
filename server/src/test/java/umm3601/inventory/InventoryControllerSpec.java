@@ -11,7 +11,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-// IO Imports
+// Jave Imports
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,8 +50,24 @@ import io.javalin.json.JavalinJackson;
 import io.javalin.validation.BodyValidator;
 import io.javalin.validation.ValidationException;
 
+/**
+ * Tests for the InventoryController using a real MongoDB test database.
+ *
+ * These tests make sure the controller behaves the way the rest of the app
+ * expects it to. They cover:
+ *  - Getting all inventory items or a single item by ID
+ *  - Handling bad or nonexistent IDs correctly
+ *  - Filtering inventory by different fields (item, brand, color, etc.)
+ *    and making sure filters work even with weird capitalization
+ *  - Validating new inventory items before saving them
+ *  - Making sure delete and add operations actually change the database
+ *  - Checking that the controller registers its routes with Javalin
+ *
+ * Each test starts with a clean set of inventory documents so results are
+ * predictable and easy to reason about.
+ */
 
-// InventoryControllerSpec Class
+// Tests for the Inventory Controller
 @SuppressWarnings({ "MagicNumber" })
 public class InventoryControllerSpec {
 
@@ -75,6 +91,9 @@ public class InventoryControllerSpec {
   @Captor
   private ArgumentCaptor<Map<String, String>> mapCaptor;
 
+  // Runs once before all the tests. This just connects to a real MongoDB "test"
+  // database so the controller is working with actual data instead of fake mocks.
+  // It basically sets up the playground the tests will use.
   @BeforeAll
   static void setupAll() {
     String mongoAddr = System.getenv().getOrDefault("MONGO_ADDR", "localhost");
@@ -92,6 +111,10 @@ public class InventoryControllerSpec {
     mongoClient.close();
   }
 
+  // Runs before every single test. We clear out the inventory collection,
+  // insert a small set of sample items, and reset all the mocks.
+  // This makes sure each test starts fresh and doesn’t get messed up by
+  // whatever happened in a previous test.
   @BeforeEach
   void setupEach() throws IOException {
     MockitoAnnotations.openMocks(this);
@@ -151,14 +174,14 @@ public class InventoryControllerSpec {
         .append("type", "shoulder bag")
         .append("material", "fabric");
 
-    // Seed the test inventory docs; include one record with known id as delete target
-    // InventoryController created with real test DB instance (not mocked) to exercise flow
     inventoryDocuments.insertMany(testInventory);
     inventoryDocuments.insertOne(sam);
 
     inventoryController = new InventoryController(db);
   }
 
+  // Checks that asking for all inventory items actually returns everything in the DB.
+  // Makes sure the controller sends back a list and a 200 OK status.
   @Test
   void canGetAllInventory() throws IOException {
     when(ctx.queryParamMap()).thenReturn(Collections.emptyMap());
@@ -173,12 +196,14 @@ public class InventoryControllerSpec {
         inventoryArrayListCaptor.getValue().size());
   }
 
-    @Test
-  void getInventoryWithExistentId() throws IOException {
+  // Makes sure that looking up an item by a real ID returns the correct inventory entry.
+  // Confirms the controller sends the right item and a 200 OK.
+  @Test
+  void getInventoryItemWithExistentId() throws IOException {
     String id = inventoryId.toHexString();
     when(ctx.pathParam("id")).thenReturn(id);
 
-    inventoryController.getInventory(ctx);
+    inventoryController.getInventoryItem(ctx);
 
     verify(ctx).json(inventoryCaptor.capture());
     verify(ctx).status(HttpStatus.OK);
@@ -186,28 +211,35 @@ public class InventoryControllerSpec {
     assertEquals(inventoryId.toHexString(), inventoryCaptor.getValue()._id);
   }
 
+  // If the ID in the URL isn’t even a valid MongoDB ObjectId, the controller should
+  // immediately reject it. This test makes sure it throws the right error.
   @Test
-  void getInventoryWithBadId() throws IOException {
+  void getInventoryItemWithBadId() throws IOException {
     when(ctx.pathParam("id")).thenReturn("bad");
 
     Throwable exception = assertThrows(BadRequestResponse.class, () -> {
-      inventoryController.getInventory(ctx);
+      inventoryController.getInventoryItem(ctx);
     });
 
     assertEquals("The requested inventory id wasn't a legal Mongo Object ID.", exception.getMessage());
   }
 
+  // The ID format is valid, but nothing in the database matches it.
+  // The controller should respond with a “not found” error instead of pretending it’s fine.
   @Test
-  void getInventoryWithNonexistentId() throws IOException {
+  void getInventoryItemWithNonexistentId() throws IOException {
     String id = "588935f5c668650dc77df581";
     when(ctx.pathParam("id")).thenReturn(id);
 
     Throwable exception = assertThrows(NotFoundResponse.class, () -> {
-      inventoryController.getInventory(ctx);
+      inventoryController.getInventoryItem(ctx);
     });
 
     assertEquals("The requested inventory item was not found", exception.getMessage());
   }
+
+  // Checks that filtering by quantity works. Only items with quantity = 5 should show up.
+  // Makes sure the filter logic is doing what we expect.
   @Test
   void canFilterInventoryByQuantity() throws IOException {
     when(ctx.queryParamMap()).thenReturn(Map.of("quantity", List.of("5")));
@@ -221,6 +253,9 @@ public class InventoryControllerSpec {
     assertEquals(1, inventoryArrayListCaptor.getValue().size());
     assertEquals("Eraser", inventoryArrayListCaptor.getValue().get(0).item);
   }
+
+  // If someone tries to filter by a quantity that isn’t a number,
+  // the controller should reject it instead of crashing or ignoring it.
   @Test
   void getInventoriesRejectsNonIntegerQuantity() {
     when(ctx.queryParamMap()).thenReturn(Map.of("quantity", List.of("notAnInt")));
@@ -232,6 +267,10 @@ public class InventoryControllerSpec {
 
     assertEquals("quantity must be an integer.", ex.getMessage());
   }
+
+  // Each of these following tests checks that filtering works even if the user types the value
+  // in weird capitalization. The controller should treat filters like “pEnCiL”
+  // the same as “pencil”.
   @Test
   void canFilterInventoryByItemCaseInsensitive() {
     when(ctx.queryParamMap()).thenReturn(Map.of("item", List.of("pEnCiL")));
@@ -341,6 +380,8 @@ public class InventoryControllerSpec {
     assertEquals("shoulder bag", inventoryArrayListCaptor.getValue().get(0).type);
   }
 
+  // Makes sure the controller actually registers its routes with Javalin.
+  // If someone accidentally removes or renames a route, this test will catch it.
   @Test
   void addsRoutes() {
     Javalin mockServer = mock(Javalin.class);
@@ -348,23 +389,23 @@ public class InventoryControllerSpec {
     verify(mockServer, Mockito.atLeast(1)).get(any(), any());
   }
 
-@Test
-  void deleteFoundInventory() throws IOException {
-    // Verify existing document is present, then delete by id and confirm it no longer exists.
-    // Also assert the controller sets 200 OK on successful delete.
-    String testID = inventoryId.toString();
-    when(ctx.pathParam("id")).thenReturn(testID);
-    assertEquals(1, db.getCollection("inventory").countDocuments(eq("_id", new ObjectId(testID))));
+  // Deletes an inventory item that really exists. After calling delete,
+  // the item should be gone from the database and the controller should return 200 OK.
+  @Test
+    void deleteFoundInventory() throws IOException {
+      String testID = inventoryId.toString();
+      when(ctx.pathParam("id")).thenReturn(testID);
+      assertEquals(1, db.getCollection("inventory").countDocuments(eq("_id", new ObjectId(testID))));
 
-    inventoryController.deleteInventory(ctx);
-    verify(ctx).status(HttpStatus.OK);
-    assertEquals(0, db.getCollection("inventory").countDocuments(eq("_id", new ObjectId(testID))));
-  }
+      inventoryController.deleteInventory(ctx);
+      verify(ctx).status(HttpStatus.OK);
+      assertEquals(0, db.getCollection("inventory").countDocuments(eq("_id", new ObjectId(testID))));
+    }
 
+  // First deletes an item, then tries deleting it again. The second delete should fail
+  // with a “not found” error since the item is already gone.
   @Test
   void tryToDeleteNotFoundInventory() throws IOException {
-    // Ensure an already-deleted id returns 404 Not Found and no document exists.
-    // First call clears the item, second call should throw NotFoundResponse.
     String testID = inventoryId.toString();
     when(ctx.pathParam("id")).thenReturn(testID);
 
@@ -379,16 +420,19 @@ public class InventoryControllerSpec {
     assertEquals(0, db.getCollection("inventory").countDocuments(eq("_id", new ObjectId(testID))));
   }
 
+  // If the ID in the URL isn’t even shaped like a real ObjectId,
+  // the controller should throw an error right away instead of trying to use it.
   @Test
   void deleteInventoryWithBadId() {
-    // Invalid ObjectId bypass: controller should throw IllegalArgumentException when id is malformed.
     when(ctx.pathParam("id")).thenReturn("bad");
-
     assertThrows(IllegalArgumentException.class, () -> {
       inventoryController.deleteInventory(ctx);
     });
   }
 
+  // Adds a brand‑new inventory item using valid JSON. After the controller inserts it,
+  // we check the database to make sure all the fields were saved correctly.
+  // Also checks that the controller returns 201 CREATED.
   @Test
   void canAddInventory() throws IOException {
     String newInventoryJson = """
@@ -412,7 +456,6 @@ public class InventoryControllerSpec {
 
     inventoryController.addInventory(ctx);
     verify(ctx).json(mapCaptor.capture());
-
     verify(ctx).status(HttpStatus.CREATED);
 
     Document addedInventory = db.getCollection("inventory")
@@ -429,6 +472,8 @@ public class InventoryControllerSpec {
     assertEquals("wax", addedInventory.get("type"));
   }
 
+  // Tries to add an item where “count” is invalid (like zero or wrong type).
+  // The controller should reject it and give a validation error instead of saving bad data.
   @Test
   void addInventoryWithInvalidCount() throws IOException {
     String newInventoryJson = """
@@ -456,10 +501,11 @@ public class InventoryControllerSpec {
     });
 
     String exceptionMessage = exception.getErrors().get("REQUEST_BODY").get(0).toString();
-
     assertTrue(exceptionMessage.contains("Quantity must be 1 or more"));
   }
 
+  // Tries to add an item with a negative quantity. Since quantity can’t be negative,
+  // the controller should throw a validation error.
   @Test
   void addInventoryWithInvalidQuantity() throws IOException {
     String newInventoryJson = """
@@ -487,10 +533,11 @@ public class InventoryControllerSpec {
     });
 
     String exceptionMessage = exception.getErrors().get("REQUEST_BODY").get(0).toString();
-
     assertTrue(exceptionMessage.contains("Quantity must be >= 0"));
   }
 
+  // Tries to add an item with an empty item name. The controller should reject it,
+  // because every inventory entry needs a real item name.
   @Test
   void addInventoryWithInvalidItem() throws IOException {
     String newInventoryJson = """
@@ -518,7 +565,6 @@ public class InventoryControllerSpec {
     });
 
     String exceptionMessage = exception.getErrors().get("REQUEST_BODY").get(0).toString();
-
     assertTrue(exceptionMessage.contains("Inventory must have a non-empty item key"));
   }
 }

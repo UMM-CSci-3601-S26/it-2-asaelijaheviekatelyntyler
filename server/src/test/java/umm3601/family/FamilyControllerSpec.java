@@ -1,6 +1,8 @@
+// Packages
 package umm3601.family;
-import static com.mongodb.client.model.Filters.eq;
 
+import static com.mongodb.client.model.Filters.eq;
+// Static Imports
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -9,6 +11,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+// Java Imports
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,6 +19,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+// Org Imports
 import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.junit.jupiter.api.AfterAll;
@@ -28,6 +32,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
+// Com Imports
 import com.mongodb.MongoClientSettings;
 import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoClient;
@@ -35,6 +40,7 @@ import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 
+// IO Imports
 import io.javalin.Javalin;
 import io.javalin.http.BadRequestResponse;
 import io.javalin.http.Context;
@@ -44,6 +50,23 @@ import io.javalin.json.JavalinJackson;
 import io.javalin.validation.BodyValidator;
 import io.javalin.validation.ValidationException;
 
+/**
+ * Tests for the FamilyController using a real MongoDB "test" database.
+ *
+ * These tests make sure the controller behaves the way the rest of the app
+ * expects it to. They cover:
+ *  - Getting all families or a single family by ID
+ *  - Handling bad or nonexistent IDs
+ *  - Adding new families and checking that validation works
+ *  - Deleting families and making sure the database updates correctly
+ *  - Dashboard stats and CSV export formatting
+ *  - Making sure the controller actually registers its routes
+ *
+ * Each test starts with a clean set of family documents so results are
+ * predictable and easy to understand.
+ */
+
+// Tests for the Family Controller
 @SuppressWarnings({ "MagicNumber" })
 class FamilyControllerSpec {
 
@@ -73,6 +96,9 @@ class FamilyControllerSpec {
   @Captor
   private ArgumentCaptor<Map<String, Object>> dashboardCaptor;
 
+  // Runs once before all the tests. This connects to a real MongoDB "test"
+  // database so the controller is working with actual data instead of fake mocks.
+  // Basically sets up the shared database the tests will use.
   @BeforeAll
   static void setupAll() {
     String mongoAddr = System.getenv().getOrDefault("MONGO_ADDR", "localhost");
@@ -90,6 +116,9 @@ class FamilyControllerSpec {
     mongoClient.close();
   }
 
+  // Runs before every test. We clear out the families collection, insert a small
+  // set of sample families, and reset all the mocks. This keeps each test
+  // independent so nothing gets messed up by a previous test.
   @BeforeEach
   void setupEach() throws IOException {
     MockitoAnnotations.openMocks(this);
@@ -174,6 +203,8 @@ class FamilyControllerSpec {
     familyController = new FamilyController(db);
   }
 
+  // Checks that the controller actually registers all its routes with Javalin.
+  // If someone removes or renames a route by accident, this test will catch it.  @Test
   @Test
   void addsRoutes() {
     Javalin mockServer = mock(Javalin.class);
@@ -185,6 +216,8 @@ class FamilyControllerSpec {
     verify(mockServer, Mockito.atLeastOnce()).delete(any(), any());
   }
 
+  // Makes sure that asking for all families returns everything in the database.
+  // Also checks that the controller responds with a 200 OK.  @Test
   @Test
   void canGetAllFamilies() throws IOException {
     when(ctx.queryParamMap()).thenReturn(Collections.emptyMap());
@@ -198,6 +231,8 @@ class FamilyControllerSpec {
       familyArrayListCaptor.getValue().size());
   }
 
+  // Looks up a family using a real ID and makes sure the controller returns the
+  // correct family and a 200 OK status.  @Test
   @Test
   void getFamilyWithExistentId() {
     String id = testFamilyId.toString();
@@ -211,6 +246,8 @@ class FamilyControllerSpec {
     assertEquals(testFamilyId.toString(), familyCaptor.getValue()._id);
   }
 
+  // If the ID in the URL isn’t even shaped like a real MongoDB ObjectId,
+  // the controller should reject it right away. This test checks that.  @Test
   @Test
   void getFamilyWithBadId() {
     when(ctx.pathParam("id")).thenReturn("bad");
@@ -224,6 +261,8 @@ class FamilyControllerSpec {
       exception.getMessage());
   }
 
+  // The ID format is valid, but nothing in the database matches it.
+  // The controller should return a “not found” error instead of pretending it’s fine.  @Test
   @Test
   void getFamiliesWithNonexistentId() throws IOException {
     String id = "588935f5c668650dc77df581";
@@ -236,9 +275,11 @@ class FamilyControllerSpec {
     assertEquals("The requested family was not found", exception.getMessage());
   }
 
+  // Adds a brand‑new family using valid JSON. After the controller inserts it,
+  // we check the database to make sure the fields were saved correctly.
+  // Also checks that the controller returns 201 CREATED.  @Test
   @Test
   void addNewFamily() {
-
     Family newFamily = new Family();
     newFamily.guardianName = "Charlie Brown";
     newFamily.email = "charlie@email.com";
@@ -269,9 +310,10 @@ class FamilyControllerSpec {
     assertEquals("charlie@email.com", added.get("email"));
   }
 
+  // Tries to add a family with an invalid email address. The controller should
+  // reject it with a validation error instead of saving bad data.  @Test
   @Test
   void addInvalidEmail() {
-
     String json = """
       {
         "guardianName": "Bad Email",
@@ -303,9 +345,10 @@ class FamilyControllerSpec {
         .contains("valid email"));
   }
 
+  // Deletes a family that actually exists. After calling delete, the family
+  // should be gone from the database and the controller should return 200 OK.  @Test
   @Test
   void deleteFoundFamily() {
-
     when(ctx.pathParam("id"))
       .thenReturn(testFamilyId.toString());
 
@@ -318,6 +361,8 @@ class FamilyControllerSpec {
         .countDocuments(eq("_id", testFamilyId)));
   }
 
+  // Tries to delete a family that isn’t in the database. The controller should
+  // return a “not found” error and not pretend the delete worked.  @Test
   @Test
   void deleteFamilyNotFound() {
 
@@ -336,13 +381,12 @@ class FamilyControllerSpec {
     assertTrue(exception.getMessage().contains("Was unable to delete Family ID"));
   }
 
+  // Makes sure the dashboard stats include all the expected fields and that the
+  // total family count matches what’s in the database.  @Test
   @Test
   void getDashboardStats() {
-
     familyController.getDashboardStats(ctx);
-
     verify(ctx).json(dashboardCaptor.capture());
-
     Map<String, Object> result = dashboardCaptor.getValue();
 
     assertTrue(result.containsKey("studentsPerSchool"));
@@ -355,10 +399,11 @@ class FamilyControllerSpec {
     );
   }
 
+  // Checks that the CSV export endpoint produces a properly formatted CSV string,
+  // including the header and the correct student counts for each family.  @Test
   @Test
   void exportFamiliesAsCSVProducesCorrectCSV() {
     familyController.exportFamiliesAsCSV(ctx);
-
     ArgumentCaptor<String> resultCaptor = ArgumentCaptor.forClass(String.class);
 
     verify(ctx).result(resultCaptor.capture());

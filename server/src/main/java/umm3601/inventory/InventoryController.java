@@ -35,7 +35,18 @@ import io.javalin.http.NotFoundResponse;
 // Misc Imports
 import umm3601.Controller;
 
-// Controller
+/**
+ * Controller for handling Inventory-related API routes.
+ *
+ * Routes include:
+ *  - GET /api/inventory              → list all inventory items (with optional filters)
+ *  - GET /api/inventory/{id}         → get a single inventory item
+ *  - POST /api/inventory             → add a new inventory item
+ *  - DELETE /api/inventory/{id}      → delete an inventory item
+ *
+ * Inventory is the core data model for tracking available school supplies, and is used for both
+ * display and fulfillment.
+ */
 public class InventoryController implements Controller {
 
   private static final String API_INVENTORY = "/api/inventory";
@@ -56,6 +67,7 @@ public class InventoryController implements Controller {
   private final JacksonMongoCollection<Inventory> inventoryCollection;
 
   public InventoryController(MongoDatabase database) {
+    // Connects to the "inventory" collection using Jackson for serialization
     inventoryCollection = JacksonMongoCollection.builder().build(
       database,
       "inventory",
@@ -64,7 +76,11 @@ public class InventoryController implements Controller {
     );
   }
 
-  public void getInventory(Context ctx) {
+  /**
+   * GET /api/inventory/{id}
+   * Retrieves a single inventory item by its MongoDB ObjectId.
+   */
+  public void getInventoryItem(Context ctx) {
     String id = ctx.pathParam("id");
     Inventory inv;
 
@@ -82,44 +98,54 @@ public class InventoryController implements Controller {
     }
   }
 
+  /**
+   * GET /api/inventory
+   * Retrieves all inventory items, with optional query parameters for filtering.
+   */
   public void getInventories(Context ctx) {
     Bson filter = constructFilter(ctx);
-
     FindIterable<Inventory> results = inventoryCollection.find(filter);
-
     ArrayList<Inventory> matching = results.into(new ArrayList<>());
 
     ctx.json(matching);
     ctx.status(HttpStatus.OK);
   }
 
+  // Constructs a MongoDB filter based on query parameters in the request context.
   private Bson constructFilter(Context ctx) {
     List<Bson> filters = new ArrayList<>();
 
+    // For item
     if (ctx.queryParamMap().containsKey(ITEM_KEY)) {
       Pattern pattern = Pattern.compile(Pattern.quote(ctx.queryParam(ITEM_KEY)), Pattern.CASE_INSENSITIVE);
       filters.add(regex(ITEM_KEY, pattern));
     }
 
+    // For brand
     if (ctx.queryParamMap().containsKey(BRAND_KEY)) {
       Pattern pattern = Pattern.compile(Pattern.quote(ctx.queryParam(BRAND_KEY)), Pattern.CASE_INSENSITIVE);
       filters.add(regex(BRAND_KEY, pattern));
     }
 
+    // For color
     if (ctx.queryParamMap().containsKey(COLOR_KEY)) {
       Pattern pattern = Pattern.compile(Pattern.quote(ctx.queryParam(COLOR_KEY)), Pattern.CASE_INSENSITIVE);
       filters.add(regex(COLOR_KEY, pattern));
     }
+
+    // For size
     if (ctx.queryParamMap().containsKey(SIZE_KEY)) {
       Pattern pattern = Pattern.compile(Pattern.quote(ctx.queryParam(SIZE_KEY)), Pattern.CASE_INSENSITIVE);
       filters.add(regex(SIZE_KEY, pattern));
     }
 
+    // For description
     if (ctx.queryParamMap().containsKey(DESCRIPTION_KEY)) {
       Pattern pattern = Pattern.compile(Pattern.quote(ctx.queryParam(DESCRIPTION_KEY)), Pattern.CASE_INSENSITIVE);
       filters.add(regex(DESCRIPTION_KEY, pattern));
     }
 
+    // For quantity, which must be an integer
     if (ctx.queryParamMap().containsKey(QUANTITY_KEY)) {
       String qParam = ctx.queryParam(QUANTITY_KEY);
       try {
@@ -130,19 +156,25 @@ public class InventoryController implements Controller {
       }
     }
 
+    // For notes
     if (ctx.queryParamMap().containsKey(NOTES_KEY)) {
       Pattern pattern = Pattern.compile(Pattern.quote(ctx.queryParam(NOTES_KEY)), Pattern.CASE_INSENSITIVE);
       filters.add(regex(NOTES_KEY, pattern));
     }
+
+    // For material
     if (ctx.queryParamMap().containsKey(MATERIAL_KEY)) {
       Pattern pattern = Pattern.compile(Pattern.quote(ctx.queryParam(MATERIAL_KEY)), Pattern.CASE_INSENSITIVE);
       filters.add(regex(MATERIAL_KEY, pattern));
     }
+
+    // For type
     if (ctx.queryParamMap().containsKey(TYPE_KEY)) {
       Pattern pattern = Pattern.compile(Pattern.quote(ctx.queryParam(TYPE_KEY)), Pattern.CASE_INSENSITIVE);
       filters.add(regex(TYPE_KEY, pattern));
     }
 
+    // If no filters, return an empty Document to match all; otherwise combine with $and
     return filters.isEmpty() ? new Document() : and(filters);
   }
 
@@ -164,6 +196,7 @@ public class InventoryController implements Controller {
         "Quantity must be 1 or more")
       .check(inventory -> inventory.item != null && inventory.item.length() > 0,
         "Inventory must have a non-empty item key")
+      // Additional validation can be added here
       .get();
 
     inventoryCollection.insertOne(newItem);
@@ -173,7 +206,14 @@ public class InventoryController implements Controller {
   }
 
 
-  // DELETE inventory item
+  /**
+   * DELETE /api/inventory/{id}
+   * Deletes an inventory item by its MongoDB ObjectId.
+   *
+   * Returns 200 OK if deletion was successful, or 404 Not Found if:
+   *  - the ID is invalid
+   *  - no inventory item with that ID exists
+  */
   public void deleteInventory(Context ctx) {
     String id = ctx.pathParam("id");
     DeleteResult deleteResult = inventoryCollection.deleteOne(eq("_id", new ObjectId(id)));
@@ -188,10 +228,14 @@ public class InventoryController implements Controller {
     ctx.status(HttpStatus.OK);
   }
 
+  /**
+   * Registers API routes for this controller.
+   */
   @Override
   public void addRoutes(Javalin server) {
     server.get(API_INVENTORY, this::getInventories);
-    server.get(API_INVENTORY_BY_ID, this::getInventory);
+    server.get(API_INVENTORY_BY_ID, this::getInventoryItem);
+    server.post(API_INVENTORY, this::addInventory);
     server.delete(API_INVENTORY_BY_ID, this::deleteInventory);
   }
 }

@@ -1,7 +1,10 @@
+// Packages
 package umm3601.family;
 
+// Static Imports
 import java.util.List;
 
+// Org Imports
 import org.mongojack.Id;
 import org.mongojack.ObjectId;
 
@@ -39,5 +42,27 @@ public class Family {
     public String grade;
     public String school;
     public List<String> requestedSupplies;
+  }
+
+  // Override equals and hashCode for proper comparison and hashing based on _id
+  @Override
+  public boolean equals(Object obj) {
+    if (!(obj instanceof Family)) {
+      return false;
+    }
+    Family other = (Family) obj;
+    return _id != null && _id.equals(other._id);
+  }
+
+  // Hash code based on _id for use in hash-based collections
+  @Override
+  public int hashCode() {
+    return _id == null ? 0 : _id.hashCode();
+  }
+
+  // Override toString for easier debugging and logging
+  @Override
+  public String toString() {
+    return guardianName + " " + email + " " + address;
   }
 }
