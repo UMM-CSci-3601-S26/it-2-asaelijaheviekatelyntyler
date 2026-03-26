@@ -5,6 +5,7 @@ import com.mongodb.client.MongoDatabase;
 
 import umm3601.family.FamilyController;
 import umm3601.inventory.InventoryController;
+import umm3601.supplylist.SupplyListController;
 
 public class Main {
 
@@ -40,7 +41,8 @@ public class Main {
       // Add controllers here as you create them.
       // e.g., new UserController(database)
       new FamilyController(database),
-      new InventoryController(database)
+      new InventoryController(database),
+      new SupplyListController(database)
     };
     return controllers;
   }
