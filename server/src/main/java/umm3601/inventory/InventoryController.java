@@ -8,6 +8,7 @@ import static com.mongodb.client.model.Filters.regex;
 
 // Java Imports
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -111,38 +112,44 @@ public class InventoryController implements Controller {
     ctx.status(HttpStatus.OK);
   }
 
+  // "Crayons,,pencils"
+  private Bson multipleIntakeFilter(String field, String raw) {
+    List<Pattern> patterns = Arrays.stream(raw.split(","))
+      .map(String::trim)
+      .filter(s -> !s.isEmpty())
+      .map(s -> Pattern.compile(Pattern.quote(s), Pattern.CASE_INSENSITIVE))
+      .toList();
+
+    return Filters.in(field, patterns);
+  }
+
   // Constructs a MongoDB filter based on query parameters in the request context.
   private Bson constructFilter(Context ctx) {
     List<Bson> filters = new ArrayList<>();
 
     // For item
     if (ctx.queryParamMap().containsKey(ITEM_KEY)) {
-      Pattern pattern = Pattern.compile(Pattern.quote(ctx.queryParam(ITEM_KEY)), Pattern.CASE_INSENSITIVE);
-      filters.add(regex(ITEM_KEY, pattern));
+      filters.add(multipleIntakeFilter(ITEM_KEY, ctx.queryParam(ITEM_KEY)));
     }
 
     // For brand
     if (ctx.queryParamMap().containsKey(BRAND_KEY)) {
-      Pattern pattern = Pattern.compile(Pattern.quote(ctx.queryParam(BRAND_KEY)), Pattern.CASE_INSENSITIVE);
-      filters.add(regex(BRAND_KEY, pattern));
+      filters.add(multipleIntakeFilter(BRAND_KEY, ctx.queryParam(BRAND_KEY)));
     }
 
     // For color
     if (ctx.queryParamMap().containsKey(COLOR_KEY)) {
-      Pattern pattern = Pattern.compile(Pattern.quote(ctx.queryParam(COLOR_KEY)), Pattern.CASE_INSENSITIVE);
-      filters.add(regex(COLOR_KEY, pattern));
+      filters.add(multipleIntakeFilter(COLOR_KEY, ctx.queryParam(COLOR_KEY)));
     }
 
     // For size
     if (ctx.queryParamMap().containsKey(SIZE_KEY)) {
-      Pattern pattern = Pattern.compile(Pattern.quote(ctx.queryParam(SIZE_KEY)), Pattern.CASE_INSENSITIVE);
-      filters.add(regex(SIZE_KEY, pattern));
+      filters.add(multipleIntakeFilter(SIZE_KEY, ctx.queryParam(SIZE_KEY)));
     }
 
     // For description
     if (ctx.queryParamMap().containsKey(DESCRIPTION_KEY)) {
-      Pattern pattern = Pattern.compile(Pattern.quote(ctx.queryParam(DESCRIPTION_KEY)), Pattern.CASE_INSENSITIVE);
-      filters.add(regex(DESCRIPTION_KEY, pattern));
+      filters.add(multipleIntakeFilter(DESCRIPTION_KEY, ctx.queryParam(DESCRIPTION_KEY)));
     }
 
     // For quantity, which must be an integer
@@ -164,14 +171,12 @@ public class InventoryController implements Controller {
 
     // For material
     if (ctx.queryParamMap().containsKey(MATERIAL_KEY)) {
-      Pattern pattern = Pattern.compile(Pattern.quote(ctx.queryParam(MATERIAL_KEY)), Pattern.CASE_INSENSITIVE);
-      filters.add(regex(MATERIAL_KEY, pattern));
+      filters.add(multipleIntakeFilter(MATERIAL_KEY, ctx.queryParam(MATERIAL_KEY)));
     }
 
     // For type
     if (ctx.queryParamMap().containsKey(TYPE_KEY)) {
-      Pattern pattern = Pattern.compile(Pattern.quote(ctx.queryParam(TYPE_KEY)), Pattern.CASE_INSENSITIVE);
-      filters.add(regex(TYPE_KEY, pattern));
+      filters.add(multipleIntakeFilter(TYPE_KEY, ctx.queryParam(TYPE_KEY)));
     }
 
     // If no filters, return an empty Document to match all; otherwise combine with $and
