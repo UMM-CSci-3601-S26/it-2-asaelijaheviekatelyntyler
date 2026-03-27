@@ -3,6 +3,7 @@ package umm3601;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoDatabase;
 
+import umm3601.checklist.ChecklistController;
 import umm3601.family.FamilyController;
 import umm3601.inventory.InventoryController;
 import umm3601.supplylist.SupplyListController;
@@ -19,7 +20,7 @@ public class Main {
     MongoDatabase database = mongoClient.getDatabase(databaseName);
 
     // Controllers used by the server.
-    final Controller[] controllers = Main.getControllers(database);
+    final Controller[] controllers = Main.getControllers(supplyDB, inventoryDB, familyDB);
 
     // Start the server.
     Server server = new Server(mongoClient, controllers);
@@ -36,13 +37,14 @@ public class Main {
   /**
    * Returns the controllers used by the server.
    */
-  static Controller[] getControllers(MongoDatabase database) {
+  static Controller[] getControllers(MongoDatabase supplyDB, MongoDatabase inventoryDB, MongoDatabase familyDB) {
     Controller[] controllers = new Controller[] {
       // Add controllers here as you create them.
       // e.g., new UserController(database)
-      new FamilyController(database),
-      new InventoryController(database),
-      new SupplyListController(database)
+      new FamilyController(familyDB),
+      new InventoryController(inventoryDB),
+      new SupplyListController(supplyDB),
+      new ChecklistController(supplyDB, familyDB)
     };
     return controllers;
   }
