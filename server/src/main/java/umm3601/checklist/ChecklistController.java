@@ -1,4 +1,4 @@
-/ Packages
+//Packages
 package umm3601.checklist;
 
 // Static imports
@@ -33,6 +33,9 @@ import umm3601.family.Family;
 import umm3601.family.Family.StudentInfo;
 import umm3601.supplylist.SupplyList;
 
+// Define the Checklist class if it doesn't exist elsewhere
+
+
 /**
  * Controller for handling Checklist-related API routes.
  *
@@ -56,6 +59,7 @@ public class ChecklistController implements Controller {
   static final String SCHOOL_KEY = "school";
   static final String GRADE_KEY = "grade";
   static final String NAME_KEY = "studentName";
+  static final String REQUESTED_SUPPLIES_KEY = "requestedSupplies";
 
   private final JacksonMongoCollection<Family> familyCollection;
   private final JacksonMongoCollection<SupplyList> supplyListCollection;
@@ -82,6 +86,7 @@ public class ChecklistController implements Controller {
     checklist.studentName = student.name;   //can't display last name, so maybe guardian name instead?
     checklist.school = student.school;
     checklist.grade = student.grade;
+    checklist.requestedSupplies = student.requestedSupplies;
     checklist.checklist = items;
     return checklist;
   }
