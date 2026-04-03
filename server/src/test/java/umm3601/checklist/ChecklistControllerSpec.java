@@ -199,7 +199,6 @@ testChecklists.add(
 //checks that checklists were created and inserted
   @Test
   void generateDigitalChecklists() {
-      Context ctx1 = mock(Context.class);
       //mock three mongo collections
       JacksonMongoCollection<SupplyList> supplyListCollection = mock(JacksonMongoCollection.class);
       JacksonMongoCollection<Family> familyCollection = mock(JacksonMongoCollection.class);
