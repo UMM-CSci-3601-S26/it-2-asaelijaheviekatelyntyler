@@ -8,6 +8,7 @@ import static com.mongodb.client.model.Filters.regex;
 
 // Java Imports
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -29,6 +30,7 @@ import io.javalin.http.BadRequestResponse;
 import io.javalin.http.Context;
 import io.javalin.http.HttpStatus;
 import io.javalin.http.NotFoundResponse;
+//import io.javalin.http.SwitchingProtocolsResponse;
 // Misc Imports
 import umm3601.Controller;
 
@@ -98,6 +100,17 @@ public class SupplyListController implements Controller {
     }
   }
 
+  // "Crayons,,pencils"
+  private Bson multipleIntakeFilter(String field, String raw) {
+    List<Pattern> patterns = Arrays.stream(raw.split(","))
+      .map(String::trim)
+      .filter(s -> !s.isEmpty())
+      .map(s -> Pattern.compile(Pattern.quote(s), Pattern.CASE_INSENSITIVE))
+      .toList();
+
+    return Filters.in(field, patterns);
+  }
+
   /**
    * GET /api/supplylist
    * Retrieves all supply list items, with optional query parameters for filtering.
@@ -119,44 +132,37 @@ public class SupplyListController implements Controller {
 
     // For school
     if (ctx.queryParamMap().containsKey(SCHOOL_KEY)) {
-      Pattern pattern = Pattern.compile(Pattern.quote(ctx.queryParam(SCHOOL_KEY)), Pattern.CASE_INSENSITIVE);
-      filters.add(regex(SCHOOL_KEY, pattern));
+      filters.add(multipleIntakeFilter(SCHOOL_KEY, ctx.queryParam(SCHOOL_KEY)));
     }
 
     // For grade
     if (ctx.queryParamMap().containsKey(GRADE_KEY)) {
-      Pattern pattern = Pattern.compile(Pattern.quote(ctx.queryParam(GRADE_KEY)), Pattern.CASE_INSENSITIVE);
-      filters.add(regex(GRADE_KEY, pattern));
+      filters.add(multipleIntakeFilter(GRADE_KEY, ctx.queryParam(GRADE_KEY)));
     }
 
     // For item
     if (ctx.queryParamMap().containsKey(ITEM_KEY)) {
-      Pattern pattern = Pattern.compile(Pattern.quote(ctx.queryParam(ITEM_KEY)), Pattern.CASE_INSENSITIVE);
-      filters.add(regex(ITEM_KEY, pattern));
+      filters.add(multipleIntakeFilter(ITEM_KEY, ctx.queryParam(ITEM_KEY)));
     }
 
     // For brand
     if (ctx.queryParamMap().containsKey(BRAND_KEY)) {
-      Pattern pattern = Pattern.compile(Pattern.quote(ctx.queryParam(BRAND_KEY)), Pattern.CASE_INSENSITIVE);
-      filters.add(regex(BRAND_KEY, pattern));
+      filters.add(multipleIntakeFilter(BRAND_KEY, ctx.queryParam(BRAND_KEY)));
     }
 
     // For color
     if (ctx.queryParamMap().containsKey(COLOR_KEY)) {
-      Pattern pattern = Pattern.compile(Pattern.quote(ctx.queryParam(COLOR_KEY)), Pattern.CASE_INSENSITIVE);
-      filters.add(regex(COLOR_KEY, pattern));
+      filters.add(multipleIntakeFilter(COLOR_KEY, ctx.queryParam(COLOR_KEY)));
     }
 
     // For size
     if (ctx.queryParamMap().containsKey(SIZE_KEY)) {
-      Pattern pattern = Pattern.compile(Pattern.quote(ctx.queryParam(SIZE_KEY)), Pattern.CASE_INSENSITIVE);
-      filters.add(regex(SIZE_KEY, pattern));
+      filters.add(multipleIntakeFilter(SIZE_KEY, ctx.queryParam(SIZE_KEY)));
     }
 
     // For description
     if (ctx.queryParamMap().containsKey(DESCRIPTION_KEY)) {
-      Pattern pattern = Pattern.compile(Pattern.quote(ctx.queryParam(DESCRIPTION_KEY)), Pattern.CASE_INSENSITIVE);
-      filters.add(regex(DESCRIPTION_KEY, pattern));
+      filters.add(multipleIntakeFilter(DESCRIPTION_KEY, ctx.queryParam(DESCRIPTION_KEY)));
     }
 
     // For quantity, which must be an integer
@@ -178,14 +184,12 @@ public class SupplyListController implements Controller {
 
     // For material
     if (ctx.queryParamMap().containsKey(MATERIAL_KEY)) {
-      Pattern pattern = Pattern.compile(Pattern.quote(ctx.queryParam(MATERIAL_KEY)), Pattern.CASE_INSENSITIVE);
-      filters.add(regex(MATERIAL_KEY, pattern));
+      filters.add(multipleIntakeFilter(MATERIAL_KEY, ctx.queryParam(MATERIAL_KEY)));
     }
 
     // For type
     if (ctx.queryParamMap().containsKey(TYPE_KEY)) {
-      Pattern pattern = Pattern.compile(Pattern.quote(ctx.queryParam(TYPE_KEY)), Pattern.CASE_INSENSITIVE);
-      filters.add(regex(TYPE_KEY, pattern));
+      filters.add(multipleIntakeFilter(TYPE_KEY, ctx.queryParam(TYPE_KEY)));
     }
 
     // If no filters, return an empty Document to match all; otherwise combine with $and
