@@ -15,6 +15,7 @@ import { MockFamilyService } from 'src/testing/family-service.mock';
 import { AddFamilyComponent } from './add-family.component';
 import { FamilyService } from './family.service';
 import { SettingsService } from '../settings/settings.service';
+import { AppSettings } from '../settings/settings';
 
 // Tests for the AddFamilyComponent
 describe('AddFamilyComponent', () => {
@@ -39,7 +40,7 @@ describe('AddFamilyComponent', () => {
         },
         {
           provide: SettingsService,
-          useValue: { getSettings: () => of({ schools: [{ name: 'Test School', abbreviation: 'TS' }] }) }
+          useValue: { getSettings: () => of({ schools: [{ name: 'Test School', abbreviation: 'TS' }] } as unknown as AppSettings) }
         }
       ]
       // error handling for async compilation of components
@@ -315,14 +316,14 @@ describe('AddFamilyComponent', () => {
   describe('Error messages', () => {
     it('should return the correct error message', () => {
       const controlName: keyof typeof addFamilyComponent.addFamilyValidationMessages = 'guardianName';
-      addFamilyComponent.addFamilyForm.get(controlName).setValue('');
-      addFamilyComponent.addFamilyForm.get(controlName).markAsTouched();
+      addFamilyComponent.addFamilyForm.get(controlName)!.setValue('');
+      addFamilyComponent.addFamilyForm.get(controlName)!.markAsTouched();
       expect(addFamilyComponent.getErrorMessage(controlName)).toEqual('Guardian name is required');
     });
 
     it('should return "Unknown error" if no error message is found', () => {
       const controlName: keyof typeof addFamilyComponent.addFamilyValidationMessages = 'guardianName';
-      addFamilyComponent.addFamilyForm.get(controlName).setErrors({ 'unknown': true });
+      addFamilyComponent.addFamilyForm.get(controlName)!.setErrors({ 'unknown': true });
       expect(addFamilyComponent.getErrorMessage(controlName)).toEqual('Unknown error');
     });
 
@@ -373,12 +374,8 @@ describe('AddFamilyComponent', () => {
         address: '123 Avenue',
         timeSlot: '9:00-10:00',
         email: 'csmith@email.com',
-        students: [{
-          name: 'Jimmy',
-          grade: '3',
-          school: 'Morris Elementary',
-          requestedSupplies: ['pencil', 'eraser', 'notebook']
-        }]
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        students: [{ name: 'Jimmy', grade: '3', school: 'Morris Elementary', requestedSupplies: ['pencil', 'eraser', 'notebook'] }] as any
       });
 
       addFamilyComponent.submitForm();
@@ -427,12 +424,8 @@ describe('AddFamilyComponent', () => {
         address: '123 Avenue',
         timeSlot: '9:00-10:00',
         email: 'csmith@email.com',
-        students: [{
-          name: 'Jimmy',
-          grade: '3',
-          school: 'Morris Elementary',
-          requestedSupplies: 'pencil, eraser , notebook '
-        }]
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        students: [{ name: 'Jimmy', grade: '3', school: 'Morris Elementary', requestedSupplies: 'pencil, eraser , notebook ' }] as any
       });
 
       addFamilyComponent.submitForm();
@@ -473,12 +466,8 @@ describe('AddFamilyComponent', () => {
         address: '123 Avenue',
         timeSlot: '9:00-10:00',
         email: 'csmith@email.com',
-        students: [{
-          name: 'Jimmy',
-          grade: '3',
-          school: 'Morris Elementary',
-          requestedSupplies: null
-        }]
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        students: [{ name: 'Jimmy', grade: '3', school: 'Morris Elementary', requestedSupplies: null }] as any
       });
 
       addFamilyComponent.submitForm();
@@ -495,13 +484,15 @@ describe('AddFamilyComponent', () => {
       const addFamilySpy = spyOn(familyService, 'addFamily').and.returnValue(of('1'));
 
       addFamilyComponent.addStudent();
-      addFamilyComponent.addFamilyForm.get('guardianName')?.setValue(null);
-      addFamilyComponent.addFamilyForm.get('email')?.setValue(null);
-      addFamilyComponent.addFamilyForm.get('address')?.setValue(null);
-      addFamilyComponent.addFamilyForm.get('timeSlot')?.setValue(null);
-      addFamilyComponent.addFamilyForm.get('students.0.name')?.setValue(null);
-      addFamilyComponent.addFamilyForm.get('students.0.grade')?.setValue(null);
-      addFamilyComponent.addFamilyForm.get('students.0.school')?.setValue(null);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const setNull = (path: string) => (addFamilyComponent.addFamilyForm.get(path) as any).setValue(null);
+      setNull('guardianName');
+      setNull('email');
+      setNull('address');
+      setNull('timeSlot');
+      setNull('students.0.name');
+      setNull('students.0.grade');
+      setNull('students.0.school');
 
       addFamilyComponent.submitForm();
 
@@ -531,7 +522,7 @@ describe('AddFamilyComponent', () => {
   describe('ngOnInit with settings', () => {
     it('should use empty array when settings.schools is null', () => {
       const settingsService = TestBed.inject(SettingsService);
-      spyOn(settingsService, 'getSettings').and.returnValue(of({ schools: undefined }));
+      spyOn(settingsService, 'getSettings').and.returnValue(of({ schools: undefined } as unknown as AppSettings));
 
       addFamilyComponent.ngOnInit();
 
@@ -541,7 +532,7 @@ describe('AddFamilyComponent', () => {
     it('should populate schools from settings', () => {
       const settingsService = TestBed.inject(SettingsService);
       spyOn(settingsService, 'getSettings').and.returnValue(
-        of({ schools: [{ name: 'Test School', abbreviation: 'TS' }] })
+        of({ schools: [{ name: 'Test School', abbreviation: 'TS' }] } as unknown as AppSettings)
       );
 
       addFamilyComponent.ngOnInit();
