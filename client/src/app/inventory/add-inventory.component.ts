@@ -91,8 +91,8 @@ export class AddInventoryComponent {
 
   // Method to check if a form control has an error and has been interacted with (dirty or touched)
   formControlHasError(controlName: string): boolean {
-    return this.addInventoryForm.get(controlName).invalid &&
-      (this.addInventoryForm.get(controlName).dirty || this.addInventoryForm.get(controlName).touched);
+    return (this.addInventoryForm.get(controlName)?.invalid ?? false) &&
+      ((this.addInventoryForm.get(controlName)?.dirty ?? false) || (this.addInventoryForm.get(controlName)?.touched ?? false));
   }
 
   // Method to get the appropriate error message for a form control based on its validation errors
@@ -113,19 +113,26 @@ export class AddInventoryComponent {
   submitForm() {
     // Prepare the form data for submission, including parsing numeric fields
     const rawForm = this.addInventoryForm.value;
-    const formData = {
-      ...rawForm,
+    const payload: Partial<import('./inventory').Inventory> = {
+      item: rawForm.item ?? undefined,
+      description: rawForm.description ?? undefined,
+      brand: rawForm.brand ?? undefined,
+      color: rawForm.color ?? undefined,
+      size: rawForm.size ?? undefined,
+      type: rawForm.type ?? undefined,
+      material: rawForm.material ?? undefined,
+      notes: rawForm.notes ?? undefined,
       // Parse count and quantity as integers, handling the case where they might be empty strings
-      count: rawForm.count ? parseInt(rawForm.count, 10) : null,
-      quantity: rawForm.quantity ? parseInt(rawForm.quantity, 10) : null
+      count: rawForm.count ? parseInt(rawForm.count, 10) : undefined,
+      quantity: rawForm.quantity ? parseInt(rawForm.quantity, 10) : undefined
     };
 
-    this.inventoryService.addInventory(formData).subscribe({
+    this.inventoryService.addInventory(payload).subscribe({
       // On success, show a confirmation message and navigate to the new inventory item's detail page
       next: (newId) => {
         this.snackBar.open(
           `Added inventory item`,
-          null,
+          undefined,
           { duration: 2000 }
         );
         this.router.navigate(['/inventory', newId]);

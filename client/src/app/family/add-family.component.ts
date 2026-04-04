@@ -94,11 +94,11 @@ export class AddFamilyComponent {
     email: [
       { type: 'required', message: 'Email is required' },
       { type: 'email', message: 'Email must be formatted properly' },
-      { type: 'minlength', message: 'School must be at least 2 characters long' }
+      { type: 'minlength', message: 'Email must be at least 2 characters long' }
     ],
     address: [
       { type: 'required', message: 'Address is required' },
-      { type: 'minlength', message: 'School must be at least 2 characters long' }
+      { type: 'minlength', message: 'Address must be at least 2 characters long' }
     ],
     timeSlot: [
       { type: 'required', message: 'Time slot is required' }
@@ -111,7 +111,7 @@ export class AddFamilyComponent {
       ],
       grade: [
         { type: 'required', message: 'Grade is required' },
-        { type: 'pattern', message: 'Grade must be a whole number' }
+        { type: 'pattern', message: 'Grade must be a valid grade (Pre-K, K, or a number)' }
       ],
       school: [
         { type: 'required', message: 'School is required' },
@@ -122,8 +122,8 @@ export class AddFamilyComponent {
 
   // Method to check if a form control has an error and has been interacted with (dirty or touched)
   formControlHasError(controlName: string): boolean {
-    return this.addFamilyForm.get(controlName).invalid &&
-      (this.addFamilyForm.get(controlName).dirty || this.addFamilyForm.get(controlName).touched);
+    return (this.addFamilyForm.get(controlName)?.invalid ?? false) &&
+      ((this.addFamilyForm.get(controlName)?.dirty ?? false) || (this.addFamilyForm.get(controlName)?.touched ?? false));
   }
 
   // Method to get the appropriate error message for a form control based on its validation errors
@@ -144,17 +144,23 @@ export class AddFamilyComponent {
   submitForm() {
     // Prepare the form data for submission, including parsing the requested supplies for each student
     const rawForm = this.addFamilyForm.value;
-    const payload = {
-      ...rawForm,
-      students: rawForm.students?.map(student => ({
-        ...student,
+    type RawStudent = { name: string | null; grade: string | null; school: string | null; requestedSupplies: string[] | string | null };
+    const payload: Partial<import('./family').Family> = {
+      guardianName: rawForm.guardianName ?? undefined,
+      email: rawForm.email ?? undefined,
+      address: rawForm.address ?? undefined,
+      timeSlot: rawForm.timeSlot ?? undefined,
+      students: (rawForm.students as RawStudent[])?.map(student => ({
+        name: student.name ?? '',
+        grade: student.grade ?? '',
+        school: student.school ?? '',
         requestedSupplies:
         // Handle the case where requestedSupplies might be a comma-separated string instead of an array
           typeof student.requestedSupplies === 'string'
             ? student.requestedSupplies
               .split(',')
-              .map(s => s.trim())
-              .filter(s => s.length > 0)
+              .map((s: string) => s.trim())
+              .filter((s: string) => s.length > 0)
             : student.requestedSupplies ?? []
       })) ?? []
     };
@@ -164,7 +170,7 @@ export class AddFamilyComponent {
       next: (newId) => {
         this.snackBar.open(
           `Added family ${rawForm.guardianName}`,
-          null,
+          undefined,
           { duration: 2000 }
         );
         this.router.navigate(['/families', newId]);
