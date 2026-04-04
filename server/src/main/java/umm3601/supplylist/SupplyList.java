@@ -7,11 +7,11 @@ import org.mongojack.Id;
 import org.mongojack.ObjectId;
 
 // Supply List Class
-@SuppressWarnings({"VisibilityModifier"})
+@SuppressWarnings({ "VisibilityModifier" })
 public class SupplyList {
 
   @ObjectId @Id
-  @SuppressWarnings({"MemberName"})
+  @SuppressWarnings({ "MemberName" })
   public String _id; // MongoDB ObjectId stored as a string
 
   // Inventory fields

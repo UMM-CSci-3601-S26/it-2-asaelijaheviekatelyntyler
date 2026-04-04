@@ -30,7 +30,7 @@ import io.javalin.http.BadRequestResponse;
 import io.javalin.http.Context;
 import io.javalin.http.HttpStatus;
 import io.javalin.http.NotFoundResponse;
-//import io.javalin.http.SwitchingProtocolsResponse;
+
 // Misc Imports
 import umm3601.Controller;
 
@@ -38,10 +38,11 @@ import umm3601.Controller;
  * Controller for handling SupplList-related API routes.
  *
  * Routes include:
- *  - GET /api/inventory              → list all supply list items (with optional filters)
- *  - GET /api/inventory/{id}         → get a single supply list item
+ * - GET /api/inventory → list all supply list items (with optional filters)
+ * - GET /api/inventory/{id} → get a single supply list item
  *
- * Supply List is the core data model for tracking what supplies students, and will be used
+ * Supply List is the core data model for tracking what supplies students, and
+ * will be used
  * help calculate supply demands.
  */
 
@@ -71,11 +72,10 @@ public class SupplyListController implements Controller {
   public SupplyListController(MongoDatabase database) {
     // Connects to the "supplylist" collection using Jackson for serialization
     supplyListCollection = JacksonMongoCollection.builder().build(
-      database,
-      "supplylist",
-      SupplyList.class,
-      UuidRepresentation.STANDARD
-    );
+        database,
+        "supplylist",
+        SupplyList.class,
+        UuidRepresentation.STANDARD);
   }
 
   /**
@@ -103,17 +103,18 @@ public class SupplyListController implements Controller {
   // "Crayons,,pencils"
   private Bson multipleIntakeFilter(String field, String raw) {
     List<Pattern> patterns = Arrays.stream(raw.split(","))
-      .map(String::trim)
-      .filter(s -> !s.isEmpty())
-      .map(s -> Pattern.compile(Pattern.quote(s), Pattern.CASE_INSENSITIVE))
-      .toList();
+        .map(String::trim)
+        .filter(s -> !s.isEmpty())
+        .map(s -> Pattern.compile(Pattern.quote(s), Pattern.CASE_INSENSITIVE))
+        .toList();
 
     return Filters.in(field, patterns);
   }
 
   /**
    * GET /api/supplylist
-   * Retrieves all supply list items, with optional query parameters for filtering.
+   * Retrieves all supply list items, with optional query parameters for
+   * filtering.
    */
   public void getSupplyLists(Context ctx) {
     Bson filter = constructFilter(ctx);

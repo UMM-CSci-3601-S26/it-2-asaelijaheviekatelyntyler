@@ -6,11 +6,11 @@ import org.mongojack.Id;
 import org.mongojack.ObjectId;
 
 // Inventory Class
-@SuppressWarnings({"VisibilityModifier"})
+@SuppressWarnings({ "VisibilityModifier" })
 public class Inventory {
 
   @ObjectId @Id
-  @SuppressWarnings({"MemberName"})
+  @SuppressWarnings({ "MemberName" })
   public String _id; // MongoDB ObjectId stored as a string
 
   // Inventory fields
