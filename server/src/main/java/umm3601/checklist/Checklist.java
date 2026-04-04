@@ -4,6 +4,9 @@ package umm3601.checklist;
 // Java Imports
 import java.util.List;
 
+import org.mongojack.Id;
+import org.mongojack.ObjectId;
+
 // Misc Imports
 import umm3601.supplylist.SupplyList;
 
@@ -38,6 +41,8 @@ class Checklist {
   }
 
   // Checklist document fields
+  @ObjectId @Id
+  @SuppressWarnings({ "MemberName" })
   public String _id;
   public String studentName;
   public String school;
