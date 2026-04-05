@@ -44,7 +44,16 @@
   }
 
   .filter-extra {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
     margin-top: 0.5rem;
+  }
+
+  .count-display {
+    font-size: 0.95rem;
+    opacity: 0.8;
   }
 }
 

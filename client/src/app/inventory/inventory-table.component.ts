@@ -138,7 +138,7 @@ export class InventoryTableComponent {
             `Problem contacting the server – Error Code: ${err.status}\nMessage: ${err.message}`
           )
         };
-        this.snackBar.open(this.errMsg(), 'OK', { duration: 6000 });
+        this.snackBar.open(this.errMsg() ?? '', 'OK', { duration: 6000 });
         return of<Inventory[]>([]);
       })
     ),

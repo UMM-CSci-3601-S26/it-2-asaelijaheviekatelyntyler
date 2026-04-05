@@ -27,11 +27,20 @@ export class ChecklistService {
   readonly checklistUrl: string = `${environment.apiUrl}checklists`;
 
   // Method to fetch the list of checklists from the API, with optional filtering parameters. It constructs the appropriate HTTP request and returns an Observable of an array of Checklist objects.
-  getChecklists(): Observable<Checklist[]> {
-    const httpParams: HttpParams = new HttpParams();
-    return this.httpClient.get<Checklist[]>(this.checklistUrl, {
-      params: httpParams,
-    });
+  getChecklists(filters?: { studentName?: string; school?: string; grade?: string }): Observable<Checklist[]> {
+    let httpParams: HttpParams = new HttpParams();
+    if (filters) {
+      if (filters.studentName) {
+        httpParams = httpParams.set('studentName', filters.studentName);
+      }
+      if (filters.school) {
+        httpParams = httpParams.set('school', filters.school);
+      }
+      if (filters.grade) {
+        httpParams = httpParams.set('grade', filters.grade);
+      }
+    }
+    return this.httpClient.get<Checklist[]>(this.checklistUrl, { params: httpParams });
   }
 
   generateChecklists(): Observable<Checklist[]> {

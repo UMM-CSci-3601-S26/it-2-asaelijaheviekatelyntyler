@@ -52,7 +52,7 @@ public class InventoryController implements Controller {
 
   private static final String API_INVENTORY = "/api/inventory";
   private static final String API_INVENTORY_BY_ID = "/api/inventory/{id}";
-  private static final String API_INVENTORY_BY_ITEM = "/api/inventory/item/{item}";
+  // private static final String API_INVENTORY_BY_ITEM = "/api/inventory/item/{item}";
 
   static final String ITEM_KEY = "item";
   static final String BRAND_KEY = "brand";

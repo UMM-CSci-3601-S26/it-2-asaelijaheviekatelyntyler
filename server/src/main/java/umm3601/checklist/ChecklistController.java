@@ -3,6 +3,7 @@ package umm3601.checklist;
 
 // Static imports
 import static com.mongodb.client.model.Filters.and;
+import static com.mongodb.client.model.Filters.regex;
 
 // Org Imports
 import org.mongojack.JacksonMongoCollection;
@@ -11,7 +12,7 @@ import org.bson.UuidRepresentation;
 import org.bson.conversions.Bson;
 
 // Com Imports
-import com.mongodb.client.model.Filters;
+// import com.mongodb.client.model.Filters;
 import com.mongodb.client.MongoDatabase;
 
 // IO Imports
@@ -23,6 +24,7 @@ import io.javalin.http.HttpStatus;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.regex.Pattern;
 
 // Misc Imports
 import umm3601.Controller;
@@ -47,11 +49,11 @@ import umm3601.supplylist.SupplyList;
 public class ChecklistController implements Controller {
 
   private static final String API_CHECKLIST = "/api/checklists";
-  private static final String API_CHECKLIST_PRINT = "/api/checklists/print";
-  private static final String API_CHECKLIST_BY_NAME = "/api/checklists/student/{name}";
-  private static final String API_CHECKLIST_FAMILY = "/api/checklists/family/{guardianName}";
-  private static final String API_CHECKLIST_BY_ID = "/api/checklists/{id}";
-  private static final String API_CHECKLIST_ITEM = "/api/checklists/{id}/item/{index}";
+  // private static final String API_CHECKLIST_PRINT = "/api/checklists/print";
+  // private static final String API_CHECKLIST_BY_NAME = "/api/checklists/student/{name}";
+  // private static final String API_CHECKLIST_FAMILY = "/api/checklists/family/{guardianName}";
+  // private static final String API_CHECKLIST_BY_ID = "/api/checklists/{id}";
+  // private static final String API_CHECKLIST_ITEM = "/api/checklists/{id}/item/{index}";
 
   static final String SCHOOL_KEY = "school";
   static final String GRADE_KEY = "grade";
@@ -76,7 +78,7 @@ public class ChecklistController implements Controller {
     familyCollection = JacksonMongoCollection.builder().build(
       db, "families", Family.class, UuidRepresentation.STANDARD);
     supplyListCollection = JacksonMongoCollection.builder().build(
-      db, "supply-list", SupplyList.class, UuidRepresentation.STANDARD);
+      db, "supplylist", SupplyList.class, UuidRepresentation.STANDARD);
     checklistCollection = JacksonMongoCollection.builder().build(
       db, "checklists", Checklist.class, UuidRepresentation.STANDARD);
   }
@@ -146,6 +148,7 @@ public class ChecklistController implements Controller {
 
   // POST /api/checklist — snapshot all families into the checklists collection
   public void generateDigitalChecklists(Context ctx) {
+    checklistCollection.deleteMany(new Document());
     List<SupplyList> allSupplies = supplyListCollection.find().into(new ArrayList<>());
     List<Checklist> checklists = familyCollection.find().into(new ArrayList<>()).stream()
       .flatMap(f -> f.students.stream().map(s -> createChecklist(s, allSupplies)))
@@ -167,13 +170,16 @@ public class ChecklistController implements Controller {
     List<Bson> filters = new ArrayList<>();
 
     if (ctx.queryParamMap().containsKey(SCHOOL_KEY)) {
-      filters.add(Filters.eq(SCHOOL_KEY, ctx.queryParam(SCHOOL_KEY)));
+      Pattern pattern = Pattern.compile(Pattern.quote(ctx.queryParam(SCHOOL_KEY)), Pattern.CASE_INSENSITIVE);
+      filters.add(regex(SCHOOL_KEY, pattern));
     }
     if (ctx.queryParamMap().containsKey(GRADE_KEY)) {
-      filters.add(Filters.eq(GRADE_KEY, ctx.queryParam(GRADE_KEY)));
+      Pattern pattern = Pattern.compile(Pattern.quote(ctx.queryParam(GRADE_KEY)), Pattern.CASE_INSENSITIVE);
+      filters.add(regex(GRADE_KEY, pattern));
     }
     if (ctx.queryParamMap().containsKey(NAME_KEY)) {
-      filters.add(Filters.regex(NAME_KEY, ctx.queryParam(NAME_KEY), "i"));
+      Pattern pattern = Pattern.compile(Pattern.quote(ctx.queryParam(NAME_KEY)), Pattern.CASE_INSENSITIVE);
+      filters.add(regex(NAME_KEY, pattern));
     }
 
     return filters.isEmpty() ? new Document() : and(filters);

@@ -1,5 +1,5 @@
 // Angular imports
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -10,9 +10,11 @@ import { MatInputModule } from '@angular/material/input';
 import { MatListModule } from '@angular/material/list';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatSelectModule } from '@angular/material/select';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 // RxJS imports
-import { catchError, of } from 'rxjs';
+import { catchError, combineLatest, debounceTime, of, switchMap } from 'rxjs';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 
 // Checklist Component and Service Import
 import { Checklist } from './checklist';
@@ -37,53 +39,65 @@ import { ChecklistService } from './checklist.service';
     MatButtonModule,
     MatTooltipModule,
     MatIconModule,
-    ChecklistCardComponent
   ],
 })
 
 /**
  * Component for displaying the list of checklists and their requested supplies.
- * - Fetches checklist data from the ChecklistService and handles errors gracefully.
- * - Provides a method to download the checklist data as a CSV file.
+ * - Uses reactive signals and combineLatest for server-side filtering by studentName, school, and grade.
+ * - Provides a method to generate checklists from current family data and refresh the view.
  * - Uses Angular Material components for styling and layout.
  */
-export class ChecklistViewComponent implements OnInit {
+export class ChecklistViewComponent {
   private checklistService = inject(ChecklistService);
+  private snackBar = inject(MatSnackBar);
 
-  checklists = signal<Checklist[]>([]);
-  errored = signal(false);
+  studentName = signal<string | undefined>(undefined);
+  school = signal<string | undefined>(undefined);
+  grade = signal<string | undefined>(undefined);
+  refreshTrigger = signal(0);
 
-  ngOnInit() {
-    this.checklistService.getChecklists().pipe(
-      catchError(() => {
-        this.errored.set(true); return of([]);
+  errMsg = signal<string | undefined>(undefined);
+
+  private studentName$ = toObservable(this.studentName);
+  private school$ = toObservable(this.school);
+  private grade$ = toObservable(this.grade);
+  private refresh$ = toObservable(this.refreshTrigger);
+
+  serverFilteredChecklists = toSignal(
+    combineLatest([this.studentName$, this.school$, this.grade$, this.refresh$]).pipe(
+      debounceTime(300),
+      switchMap(([studentName, school, grade]) =>
+        this.checklistService.getChecklists({ studentName, school, grade })
+      ),
+      catchError((err) => {
+        if (!(err.error instanceof ErrorEvent)) {
+          this.errMsg.set(
+            `Problem contacting the server – Error Code: ${err.status}\nMessage: ${err.message}`
+          );
+        }
+        this.snackBar.open(this.errMsg() ?? '', 'OK', { duration: 6000 });
+        return of<Checklist[]>([]);
       })
-    ).subscribe(data => this.checklists.set(data));
-  }
+    ),
+    { initialValue: [] as Checklist[] }
+  );
 
   generateChecklists() {
     this.checklistService.generateChecklists().pipe(
       catchError(() => {
-        this.errored.set(true); return of([]);
+        this.errMsg.set('Failed to generate checklists.');
+        this.snackBar.open(this.errMsg() ?? '', 'OK', { duration: 6000 });
+        return of([]);
       })
-    ).subscribe(data => this.checklists.set(data));
+    ).subscribe(() => {
+      this.refreshTrigger.update(v => v + 1);
+    });
   }
 
-  /**
-   * Method to download the checklist data as a CSV file. It calls the exportChecklists() method from the ChecklistService, creates a Blob from the CSV data, and triggers a download in the browser.
-   * Handles the CSV export functionality by creating a temporary anchor element and simulating a click to download the file, then revokes the object URL to free up memory.
-   */
-  //   downloadCSV() {
-  //     this.checklistService.exportChecklists().subscribe(csvData => {
-  //       const blob = new Blob([csvData], { type: 'text/csv' });
-  //       const url = window.URL.createObjectURL(blob);
-
-  //       const a = document.createElement('a');
-  //       a.href = url;
-  //       a.download = 'checklists.csv';
-  //       a.click();
-
-//       window.URL.revokeObjectURL(url);
-//     });
-//   }
+  resetFilters() {
+    this.studentName.set(undefined);
+    this.school.set(undefined);
+    this.grade.set(undefined);
+  }
 }
