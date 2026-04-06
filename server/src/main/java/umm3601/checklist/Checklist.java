@@ -1,5 +1,7 @@
+// Packages
 package umm3601.checklist;
 
+// Java Imports
 import java.util.List;
 
 import org.mongojack.Id;
@@ -17,7 +19,7 @@ class Checklist {
   public String school;
   public String grade;
   public List<String> requestedSupplies;
-  public List<Checklist.ChecklistItem> checklist;
+  public List<ChecklistItem> checklist;
 
   public static class ChecklistItem {
     public SupplyList supply;
@@ -31,5 +33,21 @@ class Checklist {
       this.supply = supply;
     }
   }
-}
 
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) {
+      return true;
+    }
+    if (!(obj instanceof Checklist)) {
+      return false;
+    }
+    Checklist other = (Checklist) obj;
+    return this._id != null && this._id.equals(other._id);
+  }
+
+  @Override
+  public int hashCode() {
+    return _id != null ? _id.hashCode() : 0;
+  }
+}
