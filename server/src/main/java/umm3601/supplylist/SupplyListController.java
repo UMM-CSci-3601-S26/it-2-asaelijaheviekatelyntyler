@@ -235,8 +235,8 @@ public class SupplyListController implements Controller {
 
     try {
       updatedSupplyList._id = id; // Ensure the ID is set for the update
-      long modifiedCount = supplyListCollection.replaceOne
-      (eq("_id", new ObjectId(id)), updatedSupplyList).getModifiedCount();
+      long modifiedCount = supplyListCollection.replaceOne (
+        eq("_id", new ObjectId(id)), updatedSupplyList).getModifiedCount();
       if (modifiedCount == 0) {
         throw new NotFoundResponse("The requested supply list item was not found");
       }
