@@ -7,14 +7,14 @@
     "students": [
       {
         "name": "Tim",
-        "grade": "3",
-        "school": "MAHS",
+        "grade": "1",
+        "school": "St. Mary's",
         "requestedSupplies": ["Headphones"]
       },
       {
         "name": "Sara",
-        "grade": "5",
-        "school": "MAHS",
+        "grade": "2",
+        "school": "St. Mary's",
         "requestedSupplies": ["Backpack"]
       }
     ]
@@ -27,40 +27,40 @@
     "students": [
       {
         "name": "Johnny Jr.",
-        "grade": "8",
-        "school": "HHS",
-        "requestedSupplies": ["Headphones, Backpack"]
+        "grade": "PreK",
+        "school": "Herman",
+        "requestedSupplies": ["Headphones", "Backpack"]
       },
       {
         "name": "Burtrum",
-        "grade": "6",
-        "school": "HHS",
+        "grade": "4",
+        "school": "St. Mary's",
         "requestedSupplies": ["Backpack"]
       },
       {
         "name": "Harold",
-        "grade": "4",
-        "school": "HHS",
+        "grade": "5",
+        "school": "St. Mary's",
         "requestedSupplies": ["Backpack"]
       }
     ]
   },
   {
     "guardianName": "Janis Dorothy",
-    "email": "jane@email.com",
+    "email": "janis@email.com",
     "address": "123 Street",
     "timeSlot": "9:00-10:00",
     "students": [
       {
         "name": "Timothy",
-        "grade": "3",
-        "school": "MAHS",
+        "grade": "PreK",
+        "school": "Herman",
         "requestedSupplies": ["Headphones"]
       },
       {
         "name": "Sarah",
-        "grade": "5",
-        "school": "MAHS",
+        "grade": "6",
+        "school": "St. Mary's",
         "requestedSupplies": []
       }
     ]

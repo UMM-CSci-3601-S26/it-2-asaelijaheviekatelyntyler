@@ -197,6 +197,55 @@ public class SupplyListController implements Controller {
     return filters.isEmpty() ? new Document() : and(filters);
   }
 
+  public void addSupplyList(Context ctx) {
+    SupplyList newSupplyList = ctx.bodyValidator(SupplyList.class)
+    .check(s -> s.school != null && !s.school.isBlank(), "school must be a non-empty string")
+    .check(s -> s.grade != null && !s.grade.isBlank(), "grade must be a non-empty string")
+    .check(s -> s.item != null && !s.item.isBlank(), "item must be a non-empty string")
+    .check(s -> s.count > 0, "count must be a positive integer")
+    .check(s -> s.quantity > 0, "quantity must be a positive integer")
+    .get();
+
+    supplyListCollection.insertOne(newSupplyList);
+    ctx.status(HttpStatus.CREATED);
+  }
+
+  public void deleteSupplyList(Context ctx) {
+    String id = ctx.pathParam("id");
+    try {
+      long deletedCount = supplyListCollection.deleteOne(eq("_id", new ObjectId(id))).getDeletedCount();
+      if (deletedCount == 0) {
+        throw new NotFoundResponse("The requested supply list item was not found");
+      }
+      ctx.status(HttpStatus.NO_CONTENT);
+    } catch (IllegalArgumentException e) {
+      throw new BadRequestResponse("The requested supply list id wasn't a legal Mongo Object ID.");
+    }
+  }
+
+  public void editSupplyList(Context ctx) {
+    String id = ctx.pathParam("id");
+    SupplyList updatedSupplyList = ctx.bodyValidator(SupplyList.class)
+      .check(s -> s.school != null && !s.school.isBlank(), "school must be a non-empty string")
+      .check(s -> s.grade != null && !s.grade.isBlank(), "grade must be a non-empty string")
+      .check(s -> s.item != null && !s.item.isBlank(), "item must be a non-empty string")
+      .check(s -> s.count > 0, "count must be a positive integer")
+      .check(s -> s.quantity > 0, "quantity must be a positive integer")
+      .get();
+
+    try {
+      updatedSupplyList._id = id; // Ensure the ID is set for the update
+      long modifiedCount = supplyListCollection.replaceOne(
+        eq("_id", new ObjectId(id)), updatedSupplyList).getModifiedCount();
+      if (modifiedCount == 0) {
+        throw new NotFoundResponse("The requested supply list item was not found");
+      }
+      ctx.status(HttpStatus.OK);
+    } catch (IllegalArgumentException e) {
+      throw new BadRequestResponse("The requested supply list id wasn't a legal Mongo Object ID.");
+    }
+  }
+
   /**
    * Registers API routes for this controller.
    */
@@ -204,5 +253,8 @@ public class SupplyListController implements Controller {
   public void addRoutes(Javalin server) {
     server.get(API_SUPPLYLIST, this::getSupplyLists);
     server.get(API_SUPPLYLIST_BY_ID, this::getList);
+    server.post(API_SUPPLYLIST, this::addSupplyList);
+    server.delete(API_SUPPLYLIST_BY_ID, this::deleteSupplyList);
+    server.put(API_SUPPLYLIST_BY_ID, this::editSupplyList);
   }
 }

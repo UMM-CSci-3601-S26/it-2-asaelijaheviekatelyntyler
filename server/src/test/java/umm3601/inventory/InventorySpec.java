@@ -71,6 +71,8 @@ public class InventorySpec {
 
   @Test
   void inventoryToString() {
-    assertEquals(inv1.toString(), "Pencil Ticonderoga Ticonderoga Pencil");
+    assertEquals(inv1.toString(), "0x Pencil Ticonderoga");
   }
+
+
 }

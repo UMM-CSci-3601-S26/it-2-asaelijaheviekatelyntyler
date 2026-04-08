@@ -3,6 +3,7 @@ package umm3601.checklist;
 
 // Static Imports
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.atLeastOnce;
@@ -229,11 +230,11 @@ class ChecklistControllerSpec {
   @Test
   void generateDigitalChecklists() {
     // mock three mongo collections
-    @SuppressWarnings("unchecked")
+    // @SuppressWarnings("unchecked")
     JacksonMongoCollection<SupplyList> supplyListCollection = mock(JacksonMongoCollection.class);
-    @SuppressWarnings("unchecked")
+    // @SuppressWarnings("unchecked")
     JacksonMongoCollection<Family> familyCollection = mock(JacksonMongoCollection.class);
-    @SuppressWarnings("unchecked")
+    // @SuppressWarnings("unchecked")
     JacksonMongoCollection<Checklist> checklistCollection = mock(JacksonMongoCollection.class);
 
     ChecklistController controller = new ChecklistController(
@@ -412,6 +413,24 @@ class ChecklistControllerSpec {
     assertEquals("Elmo", result.get(0).studentName);
   }
 
+  @Test
+  void filterChecklistsByNameAndGrade() throws IOException {
+    when(ctx.queryParamMap()).thenReturn(Map.of(
+        "name", List.of("Elmo"),
+        "grade", List.of("4")));
+    when(ctx.queryParam("name")).thenReturn("Elmo");
+    when(ctx.queryParam("grade")).thenReturn("4");
+
+    checklistController.getStoredChecklists(ctx);
+
+    verify(ctx).json(checklistArrayListCaptor.capture());
+    verify(ctx).status(HttpStatus.OK);
+
+    List<Checklist> result = checklistArrayListCaptor.getValue();
+    assertEquals(1, result.size());
+    assertEquals("Elmo", result.get(0).studentName);
+  }
+
   // This test checks that the getStoredChecklists method returns an empty list
   // when there are no checklists matching the specified school and grade. It sets
   // up query parameters for a nonexistent school and grade, calls the method, and
@@ -454,6 +473,21 @@ class ChecklistControllerSpec {
     assertEquals("Elmo", result.get(0).studentName);
   }
 
+  @Test
+  void constructFilterAddsNameRegex() {
+    when(ctx.queryParamMap()).thenReturn(Map.of(
+        "name", List.of("Elmo")));
+    when(ctx.queryParam("name")).thenReturn("Elmo");
+    checklistController.getStoredChecklists(ctx);
+
+    verify(ctx).json(checklistArrayListCaptor.capture());
+    verify(ctx).status(HttpStatus.OK);
+
+    List<Checklist> result = checklistArrayListCaptor.getValue();
+    // Verify that the filter is applied and returns results with name filter
+    assertTrue(result.size() > 0);
+    assertTrue(result.get(0).studentName.equals("Elmo"));
+  }
   // @Test
   // void canCreateChecklist() throws IOException {
   // when(ctx.queryParamMap()).thenReturn(Collections.emptyMap());
