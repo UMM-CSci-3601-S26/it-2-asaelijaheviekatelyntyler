@@ -1,11 +1,12 @@
 // Angular Imports
-import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
+import { ComponentFixture, TestBed, waitForAsync, fakeAsync, tick } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { MatSnackBar, MatSnackBarRef, SimpleSnackBar } from '@angular/material/snack-bar';
 
 // RxJS Imports
-import { Observable, of } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 
 // Checklist Component and Service Imports
 import { ChecklistService } from './checklist.service';
@@ -120,5 +121,153 @@ describe('Checklist list', () => {
         expect(checklistList.errMsg()).toBe('Failed to generate checklists.');
       });
     }));
+  });
+
+  describe('serverFilteredChecklists error handling', () => {
+    let checklistList: ChecklistViewComponent;
+    let fixture: ComponentFixture<ChecklistViewComponent>;
+    let snackBar: MatSnackBar;
+    let snackBarSpy: jasmine.Spy;
+
+    let checklistServiceStub: {
+      getChecklists: () => Observable<Checklist[]>;
+      exportChecklists: () => Observable<string>;
+      generateChecklists: () => Observable<void>;
+    };
+
+    // Test when HTTP error occurs (not an ErrorEvent)
+    beforeEach(() => {
+      const httpErrorResponse = {
+        error: { message: 'Server error' }, // Not an ErrorEvent
+        status: 500,
+        message: 'Internal Server Error'
+      };
+
+      checklistServiceStub = {
+        getChecklists: () => throwError(() => httpErrorResponse),
+        exportChecklists: () => of(''),
+        generateChecklists: () => of(void 0),
+      };
+    });
+
+    beforeEach(waitForAsync(() => {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        imports: [
+          ChecklistViewComponent
+        ],
+        providers: [
+          {
+            provide: ChecklistService,
+            useValue: checklistServiceStub
+          },
+          provideRouter([]),
+          provideHttpClient(),
+          provideHttpClientTesting(),
+        ],
+      }).compileComponents();
+    }));
+
+    beforeEach(() => {
+      fixture = TestBed.createComponent(ChecklistViewComponent);
+      checklistList = fixture.componentInstance;
+      snackBar = TestBed.inject(MatSnackBar);
+      snackBarSpy = spyOn(snackBar, 'open').and.returnValue({
+        onAction: () => of(void 0),
+        close: () => {},
+        afterDismissed: () => of({ dismissedByAction: false }),
+      } as unknown as MatSnackBarRef<SimpleSnackBar>);
+    });
+
+    // Test that error message is set with status code when HTTP error occurs
+    it('should set error message with status code and message when HTTP error occurs', fakeAsync(() => {
+      fixture.detectChanges();
+      tick(300); // Account for debounceTime
+      fixture.detectChanges();
+
+      expect(checklistList.errMsg()).toBe(
+        'Problem contacting the server – Error Code: 500\nMessage: Internal Server Error'
+      );
+    }));
+
+    // Test that snack bar is opened with error message
+    it('should open snack bar with error message when HTTP error occurs', fakeAsync(() => {
+      fixture.detectChanges();
+      tick(300); // Account for debounceTime
+      fixture.detectChanges();
+
+      expect(snackBarSpy).toHaveBeenCalledWith(
+        'Problem contacting the server – Error Code: 500\nMessage: Internal Server Error',
+        'OK',
+        { duration: 6000 }
+      );
+    }));
+
+    // Test that empty array is returned when error occurs
+    it('should return empty array when HTTP error occurs', fakeAsync(() => {
+      fixture.detectChanges();
+      tick(300); // Account for debounceTime
+      fixture.detectChanges();
+
+      expect(checklistList.serverFilteredChecklists().length).toBe(0);
+      expect(checklistList.serverFilteredChecklists()).toEqual([]);
+    }));
+
+    // Test when ErrorEvent occurs (client-side error)
+    describe('when ErrorEvent occurs', () => {
+      beforeEach(() => {
+        const errorEvent = new ErrorEvent('Network error');
+        checklistServiceStub.getChecklists = () => throwError(() => ({
+          error: errorEvent
+        }));
+      });
+
+      beforeEach(waitForAsync(() => {
+        TestBed.resetTestingModule();
+        TestBed.configureTestingModule({
+          imports: [
+            ChecklistViewComponent
+          ],
+          providers: [
+            {
+              provide: ChecklistService,
+              useValue: checklistServiceStub
+            },
+            provideRouter([]),
+            provideHttpClient(),
+            provideHttpClientTesting(),
+          ],
+        }).compileComponents();
+      }));
+
+      beforeEach(() => {
+        fixture = TestBed.createComponent(ChecklistViewComponent);
+        checklistList = fixture.componentInstance;
+        snackBar = TestBed.inject(MatSnackBar);
+        snackBarSpy = spyOn(snackBar, 'open').and.returnValue({
+          onAction: () => of(void 0),
+          close: () => {},
+          afterDismissed: () => of({ dismissedByAction: false }),
+        } as unknown as MatSnackBarRef<SimpleSnackBar>);
+      });
+
+      // Test that error message is NOT set when ErrorEvent occurs
+      it('should not set error message when ErrorEvent occurs', fakeAsync(() => {
+        fixture.detectChanges();
+        tick(300); // Account for debounceTime
+        fixture.detectChanges();
+
+        expect(checklistList.errMsg()).toBeUndefined();
+      }));
+
+      // Test that snack bar is still opened even when ErrorEvent occurs
+      it('should still open snack bar when ErrorEvent occurs', fakeAsync(() => {
+        fixture.detectChanges();
+        tick(300); // Account for debounceTime
+        fixture.detectChanges();
+
+        expect(snackBarSpy).toHaveBeenCalledWith('', 'OK', { duration: 6000 });
+      }));
+    });
   });
 });
