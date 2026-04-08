@@ -5,7 +5,6 @@ package umm3601.settings;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static com.mongodb.client.model.Filters.eq;
 import static org.mockito.Mockito.atLeastOnce;
@@ -18,13 +17,11 @@ import static org.mockito.Mockito.when;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 // Org Imports
 import org.bson.Document;
-import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -45,16 +42,12 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.model.UpdateOptions;
 
 // IO Imports
 import io.javalin.Javalin;
 import io.javalin.http.Context;
 import io.javalin.http.HttpStatus;
 import io.javalin.json.JavalinJackson;
-import umm3601.family.Family;
-import umm3601.family.Family.StudentInfo;
-import umm3601.supplylist.SupplyList;
 
 /**
  * Tests for the SettingsController using a real MongoDB "test" database.
@@ -214,7 +207,7 @@ class SettingsControllerSpec {
 
     settingsController.getSettings(ctx);
 
-    ArgumentCaptor<Settings> settingsCaptor = ArgumentCaptor.forClass(Settings.class);
+    settingsCaptor = ArgumentCaptor.forClass(Settings.class);
     verify(ctx).json(settingsCaptor.capture());
     verify(ctx).status(HttpStatus.OK);
 
