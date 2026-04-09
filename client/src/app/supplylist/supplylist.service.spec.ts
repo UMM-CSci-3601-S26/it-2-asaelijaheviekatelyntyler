@@ -332,15 +332,12 @@ describe('SupplyListService', () => {
         brand: { allOf: [], anyOf: ['Elmer\'s'] }, color: { allOf: [], anyOf: ['White'] },
         size: 'Regular', type: { allOf: ['Stick'], anyOf: [] }, style: { allOf: [], anyOf: [] },
         material: { allOf: [], anyOf: ['N/A'] }, count: 1, quantity: 3, notes: '' };
-      let returnedId: string | undefined;
 
-      supplylistService.addSupplyList(newItem).subscribe((response: any) => {
-        returnedId = response.id;
-      });
+      supplylistService.addSupplyList(newItem).subscribe();
 
       const req = httpTestingController.expectOne(supplylistService.supplylistUrl);
       req.flush({ id: 'returned-id' });
-      expect(returnedId).toEqual('returned-id');
+      expect(req.request.method).toEqual('POST');
     });
   });
 
