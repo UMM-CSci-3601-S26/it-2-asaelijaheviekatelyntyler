@@ -11,6 +11,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTabsModule } from '@angular/material/tabs';
 import { CommonModule } from '@angular/common';
 import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
+import { Router } from '@angular/router';
 
 // RxJS Imports
 import { forkJoin } from 'rxjs';
@@ -44,6 +45,7 @@ export class SettingsComponent implements OnInit {
   private settingsService = inject(SettingsService);
   private termsService = inject(TermsService);
   private snackBar = inject(MatSnackBar);
+  private router = inject(Router);
 
   // Current schools list, loaded from the server on init
   schools: SchoolInfo[] = [];
@@ -172,6 +174,19 @@ export class SettingsComponent implements OnInit {
     this.settingsService.updateSchools(this.schools).subscribe({
       next: () => this.snackBar.open('Schools saved', 'OK', { duration: 2000 }),
       error: () => this.snackBar.open('Failed to save schools', 'OK', { duration: 3000 })
+    });
+  }
+
+  // Saves the drive order then navigates to the checklist page to regenerate checklists
+  saveAndGenerateChecklists(): void {
+    const order: SupplyItemOrder[] = [
+      ...this.stagedTerms.map(t => ({ itemTerm: t, status: 'staged' as const })),
+      ...this.unstagedTerms.map(t => ({ itemTerm: t, status: 'unstaged' as const })),
+      ...this.notGivenTerms.map(t => ({ itemTerm: t, status: 'notGiven' as const })),
+    ];
+    this.settingsService.updateSupplyOrder(order).subscribe({
+      next: () => this.router.navigate(['/checklists'], { queryParams: { generate: 'true' } }),
+      error: () => this.snackBar.open('Failed to save drive order', 'OK', { duration: 3000 })
     });
   }
 

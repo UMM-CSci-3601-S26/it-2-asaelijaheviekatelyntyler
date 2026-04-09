@@ -104,6 +104,16 @@
               <strong>Not Given</strong> items are excluded from checklists entirely.
             </p>
 
+            <div class="save-button" style="margin-bottom: 16px;">
+              <button mat-raised-button color="primary" (click)="saveSupplyOrder()">
+                Save Drive Order
+              </button>
+              <button mat-raised-button color="accent" (click)="saveAndGenerateChecklists()">
+                <mat-icon>playlist_add_check</mat-icon>
+                Save &amp; Generate Checklists
+              </button>
+            </div>
+
             <div class="drive-order-columns">
 
               <!-- Staged column -->
@@ -191,12 +201,6 @@
                 </div>
               </div>
 
-            </div>
-
-            <div class="save-button">
-              <button mat-raised-button color="primary" (click)="saveSupplyOrder()">
-                Save Drive Order
-              </button>
             </div>
           </div>
         </mat-tab>

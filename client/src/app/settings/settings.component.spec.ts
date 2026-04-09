@@ -266,4 +266,23 @@ describe('SettingsComponent – drive order', () => {
 
     expect(settingsServiceSpy.updateSupplyOrder).toHaveBeenCalledWith([]);
   });
+
+  it('saveAndGenerateChecklists saves and navigates to /checklists?generate=true', () => {
+    const routerSpy = jasmine.createSpyObj('Router', ['navigate']);
+    // Patch the component's router with our spy
+    (component as any).router = routerSpy;
+    component.stagedTerms = ['notebook'];
+    component.unstagedTerms = ['folder'];
+    component.notGivenTerms = ['pencil'];
+    settingsServiceSpy.updateSupplyOrder.and.returnValue(of(undefined));
+
+    component.saveAndGenerateChecklists();
+
+    expect(settingsServiceSpy.updateSupplyOrder).toHaveBeenCalledWith([
+      { itemTerm: 'notebook', status: 'staged' },
+      { itemTerm: 'folder', status: 'unstaged' },
+      { itemTerm: 'pencil', status: 'notGiven' },
+    ]);
+    expect(routerSpy.navigate).toHaveBeenCalledWith(['/checklists'], { queryParams: { generate: 'true' } });
+  });
 });
