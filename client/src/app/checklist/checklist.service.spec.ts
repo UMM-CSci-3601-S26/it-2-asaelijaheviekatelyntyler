@@ -17,14 +17,14 @@ describe('ChecklistService', () => {
   const mockSupply1: SupplyList = {
     school: "Herman",
     grade: "7",
-    item: "Pencil",
-    brand: "Generic",
-    color: "Yellow",
+    item: ["Pencil"],
+    brand: { allOf: ["Generic"], anyOf: [] },
+    color: { allOf: [], anyOf: ["yellow"] },
     count: 1,
     size: "Medium",
-    type: "Standard",
-    material: "Wood",
-    description: "A standard pencil for school use",
+    type: { allOf: ["Standard"], anyOf: [] },
+    material: { allOf: ["Wood"], anyOf: [] },
+    style: { allOf: [], anyOf: [] },
     quantity: 1,
     notes: ""
   };
@@ -32,14 +32,14 @@ describe('ChecklistService', () => {
   const mockSupply2: SupplyList = {
     school: "Herman",
     grade: "3",
-    item: "Notebook",
-    brand: "Generic",
-    color: "Red",
+    item: ["Notebook"],
+    brand: { allOf: ["Generic"], anyOf: [] },
+    color: { allOf: ["red"], anyOf: [] },
     count: 1,
     size: "Medium",
-    type: "Standard",
-    material: "Paper",
-    description: "A standard notebook for school use",
+    type: { allOf: ["Standard"], anyOf: [] },
+    material: { allOf: ["Paper"], anyOf: [] },
+    style: { allOf: [], anyOf: [] },
     quantity: 1,
     notes: ""
   };
@@ -95,10 +95,10 @@ describe('ChecklistService', () => {
 
 
 
-  // Test to verify that exportFamilies() is called when the CSV download function is triggered,
+  // Test to verify that getChecklists() is called when the CSV download function is triggered,
   // and that the appropriate methods for handling the CSV data are invoked
-  it('exportFamilies() should be called when CSV is downloaded', () => {
-    spyOn(checklistService, 'checklistFamilies').and.returnValue(of('csv-data'));
+  it('getChecklists() should be called when CSV is downloaded', () => {
+    spyOn(checklistService, 'getChecklists').and.returnValue(of(testChecklists));
 
     spyOn(URL, 'createObjectURL').and.returnValue('blob-url');
     spyOn(URL, 'revokeObjectURL');
@@ -106,8 +106,8 @@ describe('ChecklistService', () => {
     const click = jasmine.createSpy('click');
     spyOn(document, 'createElement').and.returnValue({ click } as unknown as HTMLElement);
 
-    checklistList.downloadCSV();
-    expect(familyService.exportFamilies).toHaveBeenCalled();
+    checklistService.getChecklists();
+    expect(checklistService.getChecklists).toHaveBeenCalled();
     expect(document.createElement).toHaveBeenCalledWith('a');
     expect(click).toHaveBeenCalled();
     expect(URL.createObjectURL).toHaveBeenCalled();

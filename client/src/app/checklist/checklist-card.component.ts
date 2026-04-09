@@ -30,6 +30,11 @@ import { SupplyList } from '../supplylist/supplylist';
 export class ChecklistCardComponent {
   checklist = input.required<Checklist>();
 
+  private attrLabel(attr: { allOf: string[]; anyOf: string[] } | undefined): string {
+    if (!attr) return '';
+    return [...(attr.allOf ?? []), ...(attr.anyOf ?? [])].filter(Boolean).join('/');
+  }
+
   toLabel(s: SupplyList): string {
     const parts: string[] = [];
     parts.push(`${s.quantity}x`);
@@ -37,13 +42,18 @@ export class ChecklistCardComponent {
     if (s.size && s.size !== 'N/A') {
       parts.push(`${s.size}${s.quantity > 1 ? 's' : ''} of`);
     }
-    if (s.item) {
-      parts.push(s.quantity > 1 && !s.item.endsWith('s') ? `${s.item}s` : s.item);
+    if (s.item && s.item.length > 0) {
+      const itemStr = s.item.join(' or ');
+      parts.push(s.quantity > 1 && !itemStr.endsWith('s') ? `${itemStr}s` : itemStr);
     }
-    if (s.brand) parts.push(s.brand);
-    if (s.color) parts.push(s.color);
-    if (s.type) parts.push(s.type);
-    if (s.material) parts.push(s.material);
+    const brand = this.attrLabel(s.brand);
+    if (brand) parts.push(brand);
+    const color = this.attrLabel(s.color);
+    if (color) parts.push(color);
+    const type = this.attrLabel(s.type);
+    if (type) parts.push(type);
+    const material = this.attrLabel(s.material);
+    if (material) parts.push(material);
     if (s.notes && s.notes !== 'N/A') {
       const cleanNotes = s.notes.replace(/\?|\(\?\)/g, '').trim();
       if (cleanNotes) parts.push(`(${cleanNotes})`);

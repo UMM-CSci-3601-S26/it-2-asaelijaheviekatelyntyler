@@ -86,11 +86,26 @@ public class ChecklistController implements Controller {
         db, "checklists", Checklist.class, UuidRepresentation.STANDARD);
   }
 
+  // Normalizes a school name for matching: lowercase, strip trailing " school"
+  static String normalizeSchool(String s) {
+    if (s == null) return "";
+    return s.trim().toLowerCase().replaceAll("\\s+school$", "");
+  }
+
+  // Normalizes a grade for matching: lowercase, remove hyphens and spaces
+  static String normalizeGrade(String g) {
+    if (g == null) return "";
+    return g.trim().toLowerCase().replaceAll("[\\s\\-]", "");
+  }
+
   // Builds a Checklist for a single student from the supply list (not persisted)
   public Checklist createChecklist(StudentInfo student, List<SupplyList> allSupplies) {
+    String studentSchool = normalizeSchool(student.school);
+    String studentGrade = normalizeGrade(student.grade);
     List<Checklist.ChecklistItem> items = allSupplies.stream()
-        .filter(s -> s.school != null && s.school.equals(student.school)
-            && s.grade != null && s.grade.equals(student.grade))
+        .filter(s -> s.school != null && s.grade != null
+            && normalizeSchool(s.school).equals(studentSchool)
+            && normalizeGrade(s.grade).equals(studentGrade))
         .map(Checklist.ChecklistItem::new)
         .collect(Collectors.toList());
 

@@ -136,9 +136,8 @@ class ChecklistControllerSpec {
             .append("checklist", List.of(
                 new Document()
                     .append("supply", new Document()
-                        .append("item", "Pencils")
-                        .append("brand", "Ticonderoga")
-                        .append("description", "Ticonderoga Pencil"))
+                        .append("item", Arrays.asList("Pencils"))
+                        .append("brand", new Document().append("allOf", Arrays.asList("Ticonderoga")).append("anyOf", new ArrayList<>())))
                     .append("completed", false)
                     .append("unreceived", false)
                     .append("selectedOption", null))));
@@ -151,9 +150,8 @@ class ChecklistControllerSpec {
             .append("checklist", List.of(
                 new Document()
                     .append("supply", new Document()
-                        .append("item", "Notebooks")
-                        .append("brand", "Five Star")
-                        .append("description", "Five Star Notebook"))
+                        .append("item", Arrays.asList("Notebooks"))
+                        .append("brand", new Document().append("allOf", Arrays.asList("Five Star")).append("anyOf", new ArrayList<>())))
                     .append("completed", false)
                     .append("unreceived", false)
                     .append("selectedOption", null))));
@@ -166,9 +164,8 @@ class ChecklistControllerSpec {
             .append("checklist", List.of(
                 new Document()
                     .append("supply", new Document()
-                        .append("item", "Erasers")
-                        .append("brand", "Pink Pearl")
-                        .append("description", "Pink Pearl Eraser"))
+                        .append("item", Arrays.asList("Erasers"))
+                        .append("brand", new Document().append("allOf", Arrays.asList("Pink Pearl")).append("anyOf", new ArrayList<>())))
                     .append("completed", false)
                     .append("unreceived", false)
                     .append("selectedOption", null))));
@@ -184,9 +181,8 @@ class ChecklistControllerSpec {
         .append("checklist", List.of(
             new Document()
                 .append("supply", new Document()
-                    .append("item", "Markers")
-                    .append("brand", "Crayola")
-                    .append("description", "Crayola Markers"))
+                    .append("item", Arrays.asList("Markers"))
+                    .append("brand", new Document().append("allOf", Arrays.asList("Crayola")).append("anyOf", new ArrayList<>())))
                 .append("completed", false)
                 .append("unreceived", false)
                 .append("selectedOption", null)));
@@ -243,7 +239,7 @@ class ChecklistControllerSpec {
         checklistCollection);
     // Mock supply list
     SupplyList supply = new SupplyList();
-    supply.item = "Pencils";
+    supply.item = Arrays.asList("Pencils");
 
     FindIterable<SupplyList> supplyFind = mock(FindIterable.class);
     when(supplyListCollection.find()).thenReturn(supplyFind);
@@ -310,7 +306,7 @@ class ChecklistControllerSpec {
     SupplyList supply = new SupplyList();
     supply.school = "MAHS";
     supply.grade = "4";
-    supply.item = "Notebook";
+    supply.item = Arrays.asList("Notebook");
 
     List<SupplyList> supplies = List.of(supply);
 
@@ -326,7 +322,7 @@ class ChecklistControllerSpec {
     // Assert one checklist item was created for the matching supply
     assertEquals(1, result.checklist.size());
     Checklist.ChecklistItem item = result.checklist.get(0);
-    assertEquals("Notebook", item.supply.item);
+    assertTrue(item.supply.item.contains("Notebook"));
     assertEquals(false, item.completed);
     assertEquals(false, item.unreceived);
     assertEquals(null, item.selectedOption);
@@ -349,12 +345,12 @@ class ChecklistControllerSpec {
     SupplyList wrongSchool = new SupplyList();
     wrongSchool.school = "AHS";
     wrongSchool.grade = "4";
-    wrongSchool.item = "Pencils";
+    wrongSchool.item = Arrays.asList("Pencils");
 
     SupplyList wrongGrade = new SupplyList();
     wrongGrade.school = "MAHS";
     wrongGrade.grade = "8";
-    wrongGrade.item = "Notebooks";
+    wrongGrade.item = Arrays.asList("Notebooks");
 
     List<SupplyList> supplies = List.of(wrongSchool, wrongGrade);
 
