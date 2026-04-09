@@ -97,11 +97,11 @@ describe('Checklist list', () => {
         imports: [
           ChecklistViewComponent
         ],
-        providers: [{
-          provide: ChecklistService,
-          useValue: checklistServiceStub
-        },
-        provideRouter([])
+        providers: [
+          { provide: ChecklistService, useValue: checklistServiceStub },
+          provideRouter([]),
+          provideHttpClient(),
+          provideHttpClientTesting()
         ],
       })
         .compileComponents();
