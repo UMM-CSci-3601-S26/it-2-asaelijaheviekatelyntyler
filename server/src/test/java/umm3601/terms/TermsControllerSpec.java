@@ -1,8 +1,12 @@
 package umm3601.terms;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.mongodb.client.DistinctIterable;
 import com.mongodb.client.MongoCollection;
@@ -55,7 +59,7 @@ class TermsControllerSpec {
 
   @SuppressWarnings("unchecked")
   @Test
-  void getTerms_mergesAndSortsAllFields() {
+  void getTermsMergesAndSortsAllFields() {
     // Pre-create all iterables BEFORE any when() chain to avoid nested-stubbing
     DistinctIterable<String> slItem   = makeIterable(Arrays.asList("Crayon", "Marker"));
     DistinctIterable<String> slBrandA = makeIterable(Arrays.asList("Crayola", "BIC"));
@@ -118,7 +122,7 @@ class TermsControllerSpec {
 
   @SuppressWarnings("unchecked")
   @Test
-  void getTerms_stripsBlanksAndNulls() {
+  void getTermsStripsBlanksAndNulls() {
     // Pre-create iterables BEFORE any when() chain
     DistinctIterable<String> empty = makeIterable(new ArrayList<>());
     DistinctIterable<String> withBlanks = makeIterable(Arrays.asList("", null, "  ", "Crayon"));

@@ -137,7 +137,9 @@ class ChecklistControllerSpec {
                 new Document()
                     .append("supply", new Document()
                         .append("item", Arrays.asList("Pencils"))
-                        .append("brand", new Document().append("allOf", Arrays.asList("Ticonderoga")).append("anyOf", new ArrayList<>())))
+                        .append("brand", new Document()
+                        .append("allOf", Arrays.asList("Ticonderoga"))
+                        .append("anyOf", new ArrayList<>())))
                     .append("completed", false)
                     .append("unreceived", false)
                     .append("selectedOption", null))));
@@ -151,7 +153,9 @@ class ChecklistControllerSpec {
                 new Document()
                     .append("supply", new Document()
                         .append("item", Arrays.asList("Notebooks"))
-                        .append("brand", new Document().append("allOf", Arrays.asList("Five Star")).append("anyOf", new ArrayList<>())))
+                        .append("brand", new Document()
+                        .append("allOf", Arrays.asList("Five Star"))
+                        .append("anyOf", new ArrayList<>())))
                     .append("completed", false)
                     .append("unreceived", false)
                     .append("selectedOption", null))));
@@ -165,7 +169,9 @@ class ChecklistControllerSpec {
                 new Document()
                     .append("supply", new Document()
                         .append("item", Arrays.asList("Erasers"))
-                        .append("brand", new Document().append("allOf", Arrays.asList("Pink Pearl")).append("anyOf", new ArrayList<>())))
+                        .append("brand", new Document()
+                        .append("allOf", Arrays.asList("Pink Pearl"))
+                        .append("anyOf", new ArrayList<>())))
                     .append("completed", false)
                     .append("unreceived", false)
                     .append("selectedOption", null))));

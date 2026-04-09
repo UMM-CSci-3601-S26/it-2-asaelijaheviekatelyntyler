@@ -123,8 +123,11 @@ public class SupplyList {
     int n = attr.allOf.size();
     for (int i = 0; i < n; i++) {
       sb.append(attr.allOf.get(i));
-      if (i < n - 2) sb.append(", ");
-      else if (i == n - 2) sb.append(", and ");
+      if (i < n - 2) {
+        sb.append(", ");
+      } else if (i == n - 2) {
+        sb.append(", and ");
+      }
     }
     return sb.toString();
   }
@@ -136,8 +139,11 @@ public class SupplyList {
     int n = attr.anyOf.size();
     for (int i = 0; i < n; i++) {
       sb.append(attr.anyOf.get(i));
-      if (i < n - 2) sb.append(", ");
-      else if (i == n - 2) sb.append(", or ");
+      if (i < n - 2) {
+        sb.append(", ");
+      } else if (i == n - 2) {
+        sb.append(", or ");
+      }
     }
     sb.append(")");
     return sb.toString();
