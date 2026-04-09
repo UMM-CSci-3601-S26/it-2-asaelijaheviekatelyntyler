@@ -209,4 +209,30 @@ describe('ChecklistService', () => {
 
     req.flush(testChecklist);
   });
+
+  describe('printAllChecklists()', () => {
+    it('should call GET /api/checklists with no parameters', () => {
+      checklistService.printAllChecklists().subscribe(result => {
+        expect(result).toEqual(testChecklists);
+        expect(result.length).toBe(2);
+      });
+
+      const req = httpTestingController.expectOne(req =>
+        req.method === 'GET' && req.url === checklistService.checklistUrl
+      );
+      expect(req.request.method).toBe('GET');
+      expect(req.request.params.keys().length).toBe(0);
+      req.flush(testChecklists);
+    });
+
+    it('should return an Observable of Checklist[]', () => {
+      const mockedMethod = spyOn(httpClient, 'get').and.returnValue(of(testChecklists));
+
+      checklistService.printAllChecklists().subscribe(result => {
+        expect(result).toEqual(testChecklists);
+        expect(mockedMethod).toHaveBeenCalledTimes(1);
+        expect(mockedMethod).toHaveBeenCalledWith(checklistService.checklistUrl, { params: new HttpParams() });
+      });
+    });
+  });
 });

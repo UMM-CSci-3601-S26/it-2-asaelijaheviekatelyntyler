@@ -8,6 +8,9 @@ import { MatSnackBar, MatSnackBarRef, SimpleSnackBar } from '@angular/material/s
 // RxJS Imports
 import { Observable, of, throwError } from 'rxjs';
 
+// jsPDF
+import jsPDF from 'jspdf';
+
 // Checklist Component and Service Imports
 import { ChecklistService } from './checklist.service';
 import { ChecklistViewComponent } from './checklist-view.component';
@@ -77,6 +80,7 @@ describe('Checklist list', () => {
       getChecklists: () => Observable<Checklist[]>;
       exportChecklists: () => Observable<string>;
       generateChecklists: () => Observable<void>;
+      printAllChecklists: () => Observable<Checklist[]>;
     };
 
     // Set up a stub for the ChecklistService that simulates an error when generateChecklists() is called, and returns empty arrays/strings for other methods
@@ -87,6 +91,7 @@ describe('Checklist list', () => {
         generateChecklists: () => new Observable((observer) => {
           observer.error('generateChecklists() Observer generates an error');
         }),
+        printAllChecklists: () => of([]),
       };
     });
 
@@ -133,6 +138,7 @@ describe('Checklist list', () => {
       getChecklists: () => Observable<Checklist[]>;
       exportChecklists: () => Observable<string>;
       generateChecklists: () => Observable<void>;
+      printAllChecklists: () => Observable<Checklist[]>;
     };
 
     // Test when HTTP error occurs (not an ErrorEvent)
@@ -147,6 +153,7 @@ describe('Checklist list', () => {
         getChecklists: () => throwError(() => httpErrorResponse),
         exportChecklists: () => of(''),
         generateChecklists: () => of(void 0),
+        printAllChecklists: () => of([]),
       };
     });
 
@@ -269,5 +276,82 @@ describe('Checklist list', () => {
         expect(snackBarSpy).toHaveBeenCalledWith('', 'OK', { duration: 6000 });
       }));
     });
+  });
+
+  describe('downloadPDF()', () => {
+    let checklistService: ChecklistService;
+    let saveSpy: jasmine.Spy;
+
+    beforeEach(() => {
+      checklistService = TestBed.inject(ChecklistService);
+      saveSpy = spyOn(jsPDF.prototype, 'save');
+    });
+
+    it('should call printAllChecklists on the service', fakeAsync(() => {
+      spyOn(checklistService, 'printAllChecklists').and.returnValue(of(MockChecklistService.testChecklists));
+
+      checklistList.downloadPDF();
+      tick();
+
+      expect(checklistService.printAllChecklists).toHaveBeenCalled();
+    }));
+
+    it('should save the PDF as "checklists.pdf"', fakeAsync(() => {
+      spyOn(checklistService, 'printAllChecklists').and.returnValue(of(MockChecklistService.testChecklists));
+
+      checklistList.downloadPDF();
+      tick();
+
+      expect(saveSpy).toHaveBeenCalledWith('checklists.pdf');
+    }));
+
+    it('should save one page per checklist', fakeAsync(() => {
+      spyOn(checklistService, 'printAllChecklists').and.returnValue(of(MockChecklistService.testChecklists));
+      const addPageSpy = spyOn(jsPDF.prototype, 'addPage').and.callThrough();
+
+      checklistList.downloadPDF();
+      tick();
+
+      // Two checklists → addPage called once (for the second)
+      expect(addPageSpy).toHaveBeenCalledTimes(1);
+    }));
+
+    it('should show a snack bar when printAllChecklists fails', fakeAsync(() => {
+      spyOn(checklistService, 'printAllChecklists').and.returnValue(
+        throwError(() => ({ message: 'Network error' }))
+      );
+      const snackBar = TestBed.inject(MatSnackBar);
+      spyOn(snackBar, 'open').and.returnValue({
+        onAction: () => of(void 0),
+        close: () => {},
+        afterDismissed: () => of({ dismissedByAction: false }),
+      } as unknown as MatSnackBarRef<SimpleSnackBar>);
+
+      checklistList.downloadPDF();
+      tick();
+
+      expect(snackBar.open).toHaveBeenCalledWith(
+        'Failed to load checklists: Network error',
+        'OK',
+        { duration: 6000 }
+      );
+    }));
+
+    it('should not save a PDF when the service errors', fakeAsync(() => {
+      spyOn(checklistService, 'printAllChecklists').and.returnValue(
+        throwError(() => ({ message: 'error' }))
+      );
+      const snackBar = TestBed.inject(MatSnackBar);
+      spyOn(snackBar, 'open').and.returnValue({
+        onAction: () => of(void 0),
+        close: () => {},
+        afterDismissed: () => of({ dismissedByAction: false }),
+      } as unknown as MatSnackBarRef<SimpleSnackBar>);
+
+      checklistList.downloadPDF();
+      tick();
+
+      expect(saveSpy).not.toHaveBeenCalled();
+    }));
   });
 });
