@@ -17,8 +17,6 @@ import { toSignal } from '@angular/core/rxjs-interop';
 // RxJS imports
 import { catchError, of } from 'rxjs';
 
-import { environment } from '../../environments/environment';
-
 // Family Component and Service Import
 import { Family } from './family';
 import { FamilyCardComponent } from './family-card.component';
@@ -68,19 +66,17 @@ export class FamilyViewComponent {
    * Method to download the family data as a CSV file. It calls the exportFamilies() method from the FamilyService, creates a Blob from the CSV data, and triggers a download in the browser.
    * Handles the CSV export functionality by creating a temporary anchor element and simulating a click to download the file, then revokes the object URL to free up memory.
    */
-  downloadPdf() {
-    window.open(`${environment.apiUrl}/checklists/export/pdf`, '_blank');
+  downloadCSV() {
+    this.familyService.exportFamilies().subscribe(csvData => {
+      const blob = new Blob([csvData], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
 
-    // this.familyService.exportFamilies().subscribe(csvData => {
-    //   const blob = new Blob([csvData], { type: 'text/csv' });
-    //   const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'families.csv';
+      a.click();
 
-    //   const a = document.createElement('a');
-    //   a.href = url;
-    //   a.download = 'families.csv';
-    //   a.click();
-
-    //   window.URL.revokeObjectURL(url);
-    // });
+      window.URL.revokeObjectURL(url);
+    });
   }
 }

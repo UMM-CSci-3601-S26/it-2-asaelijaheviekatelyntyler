@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed, waitForAsync, tick, fakeAsync } from '@angular/core/testing';
+import { ComponentFixture, TestBed, waitForAsync, tick, fakeAsync, flushMicrotasks } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { Observable, of } from 'rxjs';
 import { MockSupplyListService } from 'src/testing/supplylist.service.mock'
@@ -25,13 +25,15 @@ describe('SupplyList Table', () => {
     });
   });
 
-  beforeEach(waitForAsync(() => {
+  beforeEach(fakeAsync(() => {
     TestBed.compileComponents().then(() => {
       fixture = TestBed.createComponent(SupplyListComponent);
       supplylistTable = fixture.componentInstance;
       supplylistService = TestBed.inject(SupplyListService);
       fixture.detectChanges();
     });
+    flushMicrotasks(); // resolve the compileComponents promise
+    tick(300);         // advance past the initial debounceTime(300)
   }));
 
   it('should create the component', () => {

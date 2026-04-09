@@ -1,5 +1,5 @@
 // Angular Imports
-import { ComponentFixture, TestBed, waitForAsync, tick, fakeAsync } from '@angular/core/testing';
+import { ComponentFixture, TestBed, waitForAsync, tick, fakeAsync, flushMicrotasks } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { InventoryService } from './inventory.service';
 import { provideHttpClient } from '@angular/common/http';
@@ -51,7 +51,7 @@ describe('Inventory Table', () => {
   });
 
   // Compile the component and its template before running tests, and initialize the component instance and loader
-  beforeEach(waitForAsync(() => {
+  beforeEach(fakeAsync(() => {
     TestBed.compileComponents().then(() => {
       fixture = TestBed.createComponent(InventoryTableComponent);
       inventoryTable = fixture.componentInstance;
@@ -59,6 +59,8 @@ describe('Inventory Table', () => {
       fixture.detectChanges();
       loader = TestbedHarnessEnvironment.loader(fixture);
     });
+    flushMicrotasks(); // resolve the compileComponents promise
+    tick(300);         // advance past the initial debounceTime(300)
   }));
 
   // Test to ensure the component is created successfully

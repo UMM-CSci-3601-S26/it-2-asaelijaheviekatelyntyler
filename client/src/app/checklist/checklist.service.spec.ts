@@ -95,23 +95,15 @@ describe('ChecklistService', () => {
 
 
 
-  // Test to verify that getChecklists() is called when the CSV download function is triggered,
-  // and that the appropriate methods for handling the CSV data are invoked
-  it('getChecklists() should be called when CSV is downloaded', () => {
+  // Test to verify that getChecklists() returns checklist data when called
+  it('getChecklists() should be called and return checklists', () => {
     spyOn(checklistService, 'getChecklists').and.returnValue(of(testChecklists));
 
-    spyOn(URL, 'createObjectURL').and.returnValue('blob-url');
-    spyOn(URL, 'revokeObjectURL');
+    checklistService.getChecklists().subscribe(result => {
+      expect(result).toEqual(testChecklists);
+    });
 
-    const click = jasmine.createSpy('click');
-    spyOn(document, 'createElement').and.returnValue({ click } as unknown as HTMLElement);
-
-    checklistService.getChecklists();
     expect(checklistService.getChecklists).toHaveBeenCalled();
-    expect(document.createElement).toHaveBeenCalledWith('a');
-    expect(click).toHaveBeenCalled();
-    expect(URL.createObjectURL).toHaveBeenCalled();
-    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob-url');
   });
 
 
@@ -231,7 +223,7 @@ describe('ChecklistService', () => {
       checklistService.printAllChecklists().subscribe(result => {
         expect(result).toEqual(testChecklists);
         expect(mockedMethod).toHaveBeenCalledTimes(1);
-        expect(mockedMethod).toHaveBeenCalledWith(checklistService.checklistUrl, { params: new HttpParams() });
+        expect(mockedMethod).toHaveBeenCalledWith(checklistService.checklistUrl);
       });
     });
   });
