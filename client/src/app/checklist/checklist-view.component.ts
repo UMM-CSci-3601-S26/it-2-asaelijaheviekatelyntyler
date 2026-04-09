@@ -16,12 +16,14 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { catchError, combineLatest, debounceTime, of, switchMap } from 'rxjs';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 
-import { jsPDF } from 'jspdf';
+// PDF generation
+import jsPDF from 'jspdf';
 
 // Checklist Component and Service Import
 import { Checklist } from './checklist';
 import { ChecklistCardComponent } from './checklist-card.component';
 import { ChecklistService } from './checklist.service';
+import { supplyToLabel } from './checklist-label';
 
 @Component({
   selector: 'app-checklist',
@@ -41,7 +43,7 @@ import { ChecklistService } from './checklist.service';
     MatListModule,
     MatButtonModule,
     MatTooltipModule,
-    MatIconModule,
+    MatIconModule
   ],
 })
 
@@ -105,28 +107,62 @@ export class ChecklistViewComponent {
   }
 
   downloadPDF() {
-    this.checklistService.printAllChecklists().subscribe(checklists => {
-      const doc = new jsPDF();
+    this.checklistService.printAllChecklists().subscribe({
+      error: (err) => {
+        this.snackBar.open(`Failed to load checklists: ${err.message}`, 'OK', { duration: 6000 });
+      },
+      next: (checklists) => {
+        const doc = new jsPDF();
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const margin = 14;
+        const checkSize = 4;
+        const lineHeight = 7;
 
-      let y = 10;
+        checklists.forEach((checklist, index) => {
+          if (index > 0) {
+            doc.addPage();
+          }
 
-      checklists.forEach(c => {
-        doc.text(`Student: ${c.studentName} (${c.school}, Grade ${c.grade})`, 10, y);
-        y += 8;
+          // Header block
+          doc.setFontSize(16);
+          doc.setFont('helvetica', 'bold');
+          doc.text('Supply Checklist', margin, 18);
 
-        c.checklist.forEach(item => {
-          doc.text(
-            ` - ${item.supply} | completed: ${item.completed} | unreceived: ${item.unreceived} | option: ${item.selectedOption}`,
-            10,
-            y
-          );
-          y += 6;
+          doc.setFontSize(11);
+          doc.setFont('helvetica', 'normal');
+          doc.text(`Student: ${checklist.studentName}`, margin, 28);
+          doc.text(`School:  ${checklist.school}`, margin, 35);
+          doc.text(`Grade:   ${checklist.grade}`, margin, 42);
+
+          doc.setLineWidth(0.4);
+          doc.line(margin, 46, pageWidth - margin, 46);
+
+          // Items with checkboxes
+          let y = 54;
+          checklist.checklist.forEach(item => {
+            const label = supplyToLabel(item.supply);
+            const lines = doc.splitTextToSize(label, pageWidth - margin - 20) as string[];
+            const blockHeight = lines.length * lineHeight;
+
+            if (y + blockHeight > doc.internal.pageSize.getHeight() - 14) {
+              doc.addPage();
+              y = 20;
+            }
+
+            // Checkbox square — centred vertically with the first line of text
+            doc.rect(margin, y - checkSize + 1, checkSize, checkSize);
+
+            // Label text starting after the checkbox
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text(lines, margin + checkSize + 3, y);
+
+            y += blockHeight + 3;
+          });
         });
 
-        y += 10;
-      });
-
-      doc.save('checklists.pdf');
+        doc.save('checklists.pdf');
+      }
     });
   }
 }

@@ -62,7 +62,7 @@ export class ChecklistService {
   //   });
   // }
   printAllChecklists(): Observable<Checklist[]> {
-    return this.httpClient.get<Checklist[]>(`${this.checklistUrl}/export`);
+    return this.httpClient.get<Checklist[]>(this.checklistUrl);
   }
 
   // downloadPDF() {
