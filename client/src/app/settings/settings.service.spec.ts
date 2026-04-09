@@ -93,4 +93,43 @@ describe('SettingsService', () => {
       req.flush(null);
     });
   });
+
+  describe('updateSchools()', () => {
+    it('sends PATCH to /api/settings/schools with schools body', () => {
+      const schools = [{ name: 'Morris Area High School' }];
+
+      service.updateSchools(schools).subscribe();
+
+      const req = httpTestingController.expectOne(`${settingsUrl}/schools`);
+      expect(req.request.method).toBe('PATCH');
+      expect(req.request.body).toEqual({ schools });
+      req.flush(null);
+    });
+
+    it('sends an empty array when clearing all schools', () => {
+      service.updateSchools([]).subscribe();
+
+      const req = httpTestingController.expectOne(`${settingsUrl}/schools`);
+      expect(req.request.body).toEqual({ schools: [] });
+      req.flush(null);
+    });
+  });
+
+  describe('updateTimeAvailability()', () => {
+    it('sends PATCH to /api/settings/timeAvailability with labels body', () => {
+      const labels = {
+        earlyMorning: '8:00 AM',
+        lateMorning: '10:00 AM',
+        earlyAfternoon: '12:00 PM',
+        lateAfternoon: '2:00 PM',
+      };
+
+      service.updateTimeAvailability(labels).subscribe();
+
+      const req = httpTestingController.expectOne(`${settingsUrl}/timeAvailability`);
+      expect(req.request.method).toBe('PATCH');
+      expect(req.request.body).toEqual(labels);
+      req.flush(null);
+    });
+  });
 });

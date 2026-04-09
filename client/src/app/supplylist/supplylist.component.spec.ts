@@ -622,4 +622,16 @@ describe('SupplyListComponent#cancelEdit() without prior startEdit', () => {
     expect(() => supplylistTable.cancelEdit()).not.toThrow();
     expect(supplylistTable.editingItemId).toBeNull();
   });
+
+  it('toggleAll toggles allExpanded signal from false to true', () => {
+    expect(supplylistTable.allExpanded()).toBeFalse();
+    supplylistTable.toggleAll();
+    expect(supplylistTable.allExpanded()).toBeTrue();
+  });
+
+  it('toggleAll toggles allExpanded signal from true back to false', () => {
+    supplylistTable.toggleAll(); // false → true
+    supplylistTable.toggleAll(); // true → false
+    expect(supplylistTable.allExpanded()).toBeFalse();
+  });
 });

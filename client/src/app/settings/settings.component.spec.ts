@@ -286,4 +286,123 @@ describe('SettingsComponent – drive order', () => {
     ]);
     expect(routerSpy.navigate).toHaveBeenCalledWith(['/checklists'], { queryParams: { generate: 'true' } });
   });
+
+  it('saveAndGenerateChecklists shows error snack bar on failure', () => {
+    settingsServiceSpy.updateSupplyOrder.and.returnValue(throwError(() => new Error('Network error')));
+    component.stagedTerms = [];
+    component.unstagedTerms = [];
+    component.notGivenTerms = [];
+
+    component.saveAndGenerateChecklists();
+
+    expect(snackBarSpy.open).toHaveBeenCalledWith('Failed to save drive order', 'OK', { duration: 3000 });
+  });
+
+  // ---- addSchool / removeSchool / saveSchools ----
+
+  it('addSchool adds school to list and calls updateSchools', () => {
+    settingsServiceSpy.updateSchools.and.returnValue(of(undefined));
+    component.addSchoolForm.setValue({ name: 'Test School' });
+
+    component.addSchool();
+
+    expect(settingsServiceSpy.updateSchools).toHaveBeenCalledWith([{ name: 'Test School' }]);
+    expect(component.addSchoolForm.value.name).toBeNull(); // form is reset
+  });
+
+  it('addSchool does nothing when form is invalid', () => {
+    settingsServiceSpy.updateSchools.and.returnValue(of(undefined));
+    component.addSchoolForm.setValue({ name: 'A' }); // too short — minLength(2) but 1 char fails
+
+    component.addSchool();
+
+    expect(settingsServiceSpy.updateSchools).not.toHaveBeenCalled();
+  });
+
+  it('addSchool shows success snack bar on success', () => {
+    settingsServiceSpy.updateSchools.and.returnValue(of(undefined));
+    component.addSchoolForm.setValue({ name: 'Test School' });
+
+    component.addSchool();
+
+    expect(snackBarSpy.open).toHaveBeenCalledWith('Schools saved', 'OK', { duration: 2000 });
+  });
+
+  it('addSchool shows error snack bar on failure', () => {
+    settingsServiceSpy.updateSchools.and.returnValue(throwError(() => new Error('fail')));
+    component.addSchoolForm.setValue({ name: 'Test School' });
+
+    component.addSchool();
+
+    expect(snackBarSpy.open).toHaveBeenCalledWith('Failed to save schools', 'OK', { duration: 3000 });
+  });
+
+  it('removeSchool removes school at given index and calls updateSchools', () => {
+    settingsServiceSpy.updateSchools.and.returnValue(of(undefined));
+    component.schools = [{ name: 'School A' }, { name: 'School B' }];
+
+    component.removeSchool(0);
+
+    expect(component.schools).toEqual([{ name: 'School B' }]);
+    expect(settingsServiceSpy.updateSchools).toHaveBeenCalledWith([{ name: 'School B' }]);
+  });
+
+  it('removeSchool shows error snack bar on failure', () => {
+    settingsServiceSpy.updateSchools.and.returnValue(throwError(() => new Error('fail')));
+    component.schools = [{ name: 'School A' }];
+
+    component.removeSchool(0);
+
+    expect(snackBarSpy.open).toHaveBeenCalledWith('Failed to save schools', 'OK', { duration: 3000 });
+  });
+
+  // ---- saveTimeAvailability ----
+
+  it('saveTimeAvailability calls updateTimeAvailability and shows success snack bar', () => {
+    settingsServiceSpy.updateTimeAvailability.and.returnValue(of(undefined));
+    component.timeAvailabilityForm.setValue({
+      earlyMorning: '8:00 AM',
+      lateMorning: '10:00 AM',
+      earlyAfternoon: '12:00 PM',
+      lateAfternoon: '2:00 PM',
+    });
+
+    component.saveTimeAvailability();
+
+    expect(settingsServiceSpy.updateTimeAvailability).toHaveBeenCalledWith({
+      earlyMorning: '8:00 AM',
+      lateMorning: '10:00 AM',
+      earlyAfternoon: '12:00 PM',
+      lateAfternoon: '2:00 PM',
+    });
+    expect(snackBarSpy.open).toHaveBeenCalledWith('Time availability saved', 'OK', { duration: 2000 });
+  });
+
+  it('saveTimeAvailability shows error snack bar on failure', () => {
+    settingsServiceSpy.updateTimeAvailability.and.returnValue(throwError(() => new Error('fail')));
+    component.timeAvailabilityForm.setValue({
+      earlyMorning: '8:00 AM',
+      lateMorning: '10:00 AM',
+      earlyAfternoon: '12:00 PM',
+      lateAfternoon: '2:00 PM',
+    });
+
+    component.saveTimeAvailability();
+
+    expect(snackBarSpy.open).toHaveBeenCalledWith('Failed to save time availability', 'OK', { duration: 3000 });
+  });
+
+  it('saveTimeAvailability does nothing when form is invalid', () => {
+    settingsServiceSpy.updateTimeAvailability.and.returnValue(of(undefined));
+    component.timeAvailabilityForm.setValue({
+      earlyMorning: '',
+      lateMorning: '',
+      earlyAfternoon: '',
+      lateAfternoon: '',
+    });
+
+    component.saveTimeAvailability();
+
+    expect(settingsServiceSpy.updateTimeAvailability).not.toHaveBeenCalled();
+  });
 });
