@@ -200,7 +200,7 @@ class FamilyControllerSpec {
     familyDocuments.insertMany(testFamilies);
     familyDocuments.insertOne(specialFamily);
 
-    familyController = new FamilyController(db);
+    familyController = new FamilyController(db, null);
   }
 
   // Checks that the controller actually registers all its routes with Javalin.

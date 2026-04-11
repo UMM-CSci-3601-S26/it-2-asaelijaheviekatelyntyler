@@ -33,6 +33,7 @@ import io.javalin.http.NotFoundResponse;
 
 // Misc Imports
 import umm3601.Controller;
+import umm3601.middleware.AuthMiddleware;
 
 /**
  * Controller for handling SupplList-related API routes.
@@ -68,9 +69,11 @@ public class SupplyListController implements Controller {
   // static final String SORT_ORDER_KEY = "sortorder";
 
   private final JacksonMongoCollection<SupplyList> supplyListCollection;
+  private final AuthMiddleware authMiddleware;
 
   @SuppressWarnings("SpellCheckingInspection")
-  public SupplyListController(MongoDatabase database) {
+  public SupplyListController(MongoDatabase database, AuthMiddleware authMiddleware) {
+    this.authMiddleware = authMiddleware;
     // Connects to the "supplylist" collection using Jackson for serialization
     supplyListCollection = JacksonMongoCollection.builder().build(
         database,
@@ -282,10 +285,31 @@ public class SupplyListController implements Controller {
    */
   @Override
   public void addRoutes(Javalin server) {
-    server.get(API_SUPPLYLIST, this::getSupplyLists);
-    server.get(API_SUPPLYLIST_BY_ID, this::getList);
-    server.post(API_SUPPLYLIST, this::addSupplyList);
-    server.delete(API_SUPPLYLIST_BY_ID, this::deleteSupplyList);
-    server.put(API_SUPPLYLIST_BY_ID, this::editSupplyList);
+    server.get(API_SUPPLYLIST, ctx -> {
+      authMiddleware.handle(ctx);
+      AuthMiddleware.requireRole(ctx, "admin", "volunteer");
+      getSupplyLists(ctx);
+    });
+    //families could get supply list by family
+    server.get(API_SUPPLYLIST_BY_ID, ctx -> {
+      authMiddleware.handle(ctx);
+      AuthMiddleware.requireRole(ctx, "admin", "volunteer", "guardian");
+      getList(ctx);
+    });
+    server.post(API_SUPPLYLIST, ctx -> {
+      authMiddleware.handle(ctx);
+      AuthMiddleware.requireRole(ctx, "admin");
+      addSupplyList(ctx);
+    });
+    server.delete(API_SUPPLYLIST_BY_ID, ctx -> {
+      authMiddleware.handle(ctx);
+      AuthMiddleware.requireRole(ctx, "admin");
+      deleteSupplyList(ctx);
+    });
+    server.put(API_SUPPLYLIST_BY_ID, ctx -> {
+      authMiddleware.handle(ctx);
+      AuthMiddleware.requireRole(ctx, "admin");
+      editSupplyList(ctx);
+    });
   }
 }

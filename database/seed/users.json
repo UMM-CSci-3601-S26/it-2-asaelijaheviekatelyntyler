@@ -1,0 +1,20 @@
+[
+  {
+    "username": "admin-example",
+    "passwordHash": "$2a$12$99glR4uLoKawCx6xUxvUVuCuEzD3vo4W1gz7X5.80Zq6OlQQFFjju",
+    "fullName": "Katelyn Money",
+    "role": "admin"
+  },
+  {
+    "username": "volunteer-example",
+    "passwordHash": "$2a$12$99glR4uLoKawCx6xUxvUVuCuEzD3vo4W1gz7X5.80Zq6OlQQFFjju",
+    "fullName": "Random Person",
+    "role": "volunteer"
+  },
+  {
+    "username": "guardian-example",
+    "passwordHash": "$2a$12$99glR4uLoKawCx6xUxvUVuCuEzD3vo4W1gz7X5.80Zq6OlQQFFjju",
+    "fullName": "Random Person",
+    "role": "guardian"
+  }
+]

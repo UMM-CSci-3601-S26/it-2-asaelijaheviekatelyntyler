@@ -35,6 +35,7 @@ import io.javalin.http.NotFoundResponse;
 
 // Misc Imports
 import umm3601.Controller;
+import umm3601.middleware.AuthMiddleware;
 
 /**
  * Controller for handling Inventory-related API routes.
@@ -68,8 +69,10 @@ public class InventoryController implements Controller {
   static final String SORT_ORDER_KEY = "sortorder";
 
   private final JacksonMongoCollection<Inventory> inventoryCollection;
+  private final AuthMiddleware authMiddleware;
 
-  public InventoryController(MongoDatabase database) {
+  public InventoryController(MongoDatabase database, AuthMiddleware authMiddleware) {
+    this.authMiddleware = authMiddleware;
     // Connects to the "inventory" collection using Jackson for serialization
     inventoryCollection = JacksonMongoCollection.builder().build(
         database,
@@ -283,10 +286,30 @@ public class InventoryController implements Controller {
    */
   @Override
   public void addRoutes(Javalin server) {
-    server.get(API_INVENTORY, this::getInventories);
-    server.get(API_INVENTORY_BY_ID, this::getInventoryItem);
-    server.post(API_INVENTORY, this::addInventory);
-    server.put(API_INVENTORY_BY_ID, this::editInventory);
-    server.delete(API_INVENTORY_BY_ID, this::deleteInventory);
+    server.get(API_INVENTORY, ctx -> {
+      authMiddleware.handle(ctx);
+      AuthMiddleware.requireRole(ctx, "admin", "volunteer");
+      getInventories(ctx);
+    });
+    server.get(API_INVENTORY_BY_ID, ctx -> {
+      authMiddleware.handle(ctx);
+      AuthMiddleware.requireRole(ctx, "admin", "volunteer");
+      getInventoryItem(ctx);
+    });
+    server.post(API_INVENTORY, ctx -> {
+      authMiddleware.handle(ctx);
+      AuthMiddleware.requireRole(ctx, "admin");
+      addInventory(ctx);
+    });
+    server.put(API_INVENTORY_BY_ID, ctx -> {
+      authMiddleware.handle(ctx);
+      AuthMiddleware.requireRole(ctx, "admin");
+      editInventory(ctx);
+    });
+    server.delete(API_INVENTORY_BY_ID, ctx -> {
+      authMiddleware.handle(ctx);
+      AuthMiddleware.requireRole(ctx, "admin");
+      deleteInventory(ctx);
+    });
   }
 }

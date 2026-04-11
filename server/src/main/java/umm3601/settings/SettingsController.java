@@ -26,6 +26,7 @@ import io.javalin.http.HttpStatus;
 
 // Misc Imports
 import umm3601.Controller;
+import umm3601.middleware.AuthMiddleware;
 
 /**
  * Controller for the singleton app settings document.
@@ -49,8 +50,10 @@ public class SettingsController implements Controller {
   private static final String API_SETTINGS_SUPPLY_ORDER = "/api/settings/supplyOrder";
 
   private final JacksonMongoCollection<Settings> settingsCollection;
+  private final AuthMiddleware authMiddleware;
 
-  public SettingsController(MongoDatabase database) {
+  public SettingsController(MongoDatabase database, AuthMiddleware authMiddleware) {
+    this.authMiddleware = authMiddleware;
     settingsCollection = JacksonMongoCollection.builder().build(
         database,
         "settings",
@@ -152,9 +155,25 @@ public class SettingsController implements Controller {
 
   @Override
   public void addRoutes(Javalin server) {
-    server.get(API_SETTINGS, this::getSettings);
-    server.patch(API_SETTINGS_SCHOOLS, this::updateSchools);
-    server.patch(API_SETTINGS_TIME, this::updateTimeAvailability);
-    server.patch(API_SETTINGS_SUPPLY_ORDER, this::updateSupplyOrder);
+    server.get(API_SETTINGS, ctx -> {
+      authMiddleware.handle(ctx);
+      AuthMiddleware.requireRole(ctx, "admin");
+      getSettings(ctx);
+    });
+    server.patch(API_SETTINGS_SCHOOLS, ctx -> {
+      authMiddleware.handle(ctx);
+      AuthMiddleware.requireRole(ctx, "admin");
+      updateSchools(ctx);
+    });
+    server.patch(API_SETTINGS_TIME, ctx -> {
+      authMiddleware.handle(ctx);
+      AuthMiddleware.requireRole(ctx, "admin");
+      updateTimeAvailability(ctx);
+    });
+    server.patch(API_SETTINGS_SUPPLY_ORDER, ctx -> {
+      authMiddleware.handle(ctx);
+      AuthMiddleware.requireRole(ctx, "admin");
+      updateSupplyOrder(ctx);
+    });
   }
 }

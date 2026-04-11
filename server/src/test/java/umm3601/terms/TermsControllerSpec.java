@@ -47,7 +47,6 @@ class TermsControllerSpec {
   private DistinctIterable<String> makeIterable(List<String> values) {
     DistinctIterable<String> iterable = mock(DistinctIterable.class);
     doAnswer(inv -> {
-      @SuppressWarnings("unchecked")
       Consumer<String> consumer = (Consumer<String>) inv.getArgument(0);
       for (String v : values) {
         consumer.accept(v);
@@ -57,7 +56,6 @@ class TermsControllerSpec {
     return iterable;
   }
 
-  @SuppressWarnings("unchecked")
   @Test
   void getTermsMergesAndSortsAllFields() {
     // Pre-create all iterables BEFORE any when() chain to avoid nested-stubbing
@@ -120,7 +118,6 @@ class TermsControllerSpec {
     verify(ctx).status(eq(HttpStatus.OK));
   }
 
-  @SuppressWarnings("unchecked")
   @Test
   void getTermsStripsBlanksAndNulls() {
     // Pre-create iterables BEFORE any when() chain

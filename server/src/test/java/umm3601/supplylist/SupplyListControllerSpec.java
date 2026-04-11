@@ -224,7 +224,7 @@ public class SupplyListControllerSpec {
     supplylistDocuments.insertMany(testSupplyList);
     supplylistDocuments.insertOne(sam);
 
-    supplylistController = new SupplyListController(db);
+    supplylistController = new SupplyListController(db, null);
   }
 
   // Checks that asking for all supply list items returns everything in the
@@ -959,5 +959,144 @@ public class SupplyListControllerSpec {
     verify(ctx).status(HttpStatus.OK);
 
     assertTrue(supplylistArrayCaptor.getValue().size() > 0);
+  }
+
+  // ---- editSupplyList ----
+
+  @Test
+  void editSupplyListWithValidId() throws IOException {
+    String id = samsId.toHexString();
+    String updatedJson = """
+        {
+          "school": "MHS",
+          "grade": "PreK",
+          "item": ["Backpack"],
+          "brand": {"allOf": ["JanSport"], "anyOf": []},
+          "color": {"allOf": ["red"], "anyOf": []},
+          "count": 1,
+          "size": "Standard",
+          "quantity": 3,
+          "notes": "Updated notes",
+          "type": {"allOf": ["shoulder bag"], "anyOf": []},
+          "material": {"allOf": ["fabric"], "anyOf": []},
+          "style": {"allOf": ["standard"], "anyOf": []}
+        }
+        """;
+
+    when(ctx.pathParam("id")).thenReturn(id);
+    when(ctx.bodyValidator(SupplyList.class))
+        .thenReturn(new BodyValidator<SupplyList>(
+            updatedJson,
+            SupplyList.class,
+            () -> javalinJackson.fromJsonString(updatedJson, SupplyList.class)));
+
+    supplylistController.editSupplyList(ctx);
+
+    verify(ctx).status(HttpStatus.OK);
+  }
+
+  @Test
+  void editSupplyListWithBadId() {
+    String updatedJson = """
+        {
+          "school": "MHS",
+          "grade": "PreK",
+          "item": ["Backpack"],
+          "brand": {"allOf": ["JanSport"], "anyOf": []},
+          "color": {"allOf": ["black"], "anyOf": []},
+          "count": 1,
+          "size": "Standard",
+          "quantity": 2,
+          "notes": "N/A",
+          "type": {"allOf": ["shoulder bag"], "anyOf": []},
+          "material": {"allOf": ["fabric"], "anyOf": []},
+          "style": {"allOf": ["standard"], "anyOf": []}
+        }
+        """;
+
+    when(ctx.pathParam("id")).thenReturn("bad");
+    when(ctx.bodyValidator(SupplyList.class))
+        .thenReturn(new BodyValidator<SupplyList>(
+            updatedJson,
+            SupplyList.class,
+            () -> javalinJackson.fromJsonString(updatedJson, SupplyList.class)));
+
+    Throwable exception = assertThrows(BadRequestResponse.class, () -> {
+      supplylistController.editSupplyList(ctx);
+    });
+
+    assertEquals("The requested supply list id wasn't a legal Mongo Object ID.", exception.getMessage());
+  }
+
+  @Test
+  void editSupplyListWithNonexistentId() {
+    String id = "588935f5c668650dc77df581";
+    String updatedJson = """
+        {
+          "school": "MHS",
+          "grade": "PreK",
+          "item": ["Backpack"],
+          "brand": {"allOf": ["JanSport"], "anyOf": []},
+          "color": {"allOf": ["black"], "anyOf": []},
+          "count": 1,
+          "size": "Standard",
+          "quantity": 2,
+          "notes": "N/A",
+          "type": {"allOf": ["shoulder bag"], "anyOf": []},
+          "material": {"allOf": ["fabric"], "anyOf": []},
+          "style": {"allOf": ["standard"], "anyOf": []}
+        }
+        """;
+
+    when(ctx.pathParam("id")).thenReturn(id);
+    when(ctx.bodyValidator(SupplyList.class))
+        .thenReturn(new BodyValidator<SupplyList>(
+            updatedJson,
+            SupplyList.class,
+            () -> javalinJackson.fromJsonString(updatedJson, SupplyList.class)));
+
+    Throwable exception = assertThrows(NotFoundResponse.class, () -> {
+      supplylistController.editSupplyList(ctx);
+    });
+
+    assertEquals("The requested supply list item was not found", exception.getMessage());
+  }
+
+  @Test
+  void editSupplyListActuallyUpdatesItem() throws IOException {
+    String id = samsId.toHexString();
+    String updatedJson = """
+        {
+          "school": "CHS",
+          "grade": "5th grade",
+          "item": ["Backpack"],
+          "brand": {"allOf": ["Nike"], "anyOf": []},
+          "color": {"allOf": ["blue"], "anyOf": []},
+          "count": 2,
+          "size": "Large",
+          "quantity": 5,
+          "notes": "No wheels",
+          "type": {"allOf": ["shoulder bag"], "anyOf": []},
+          "material": {"allOf": ["nylon"], "anyOf": []},
+          "style": {"allOf": ["standard"], "anyOf": []}
+        }
+        """;
+
+    when(ctx.pathParam("id")).thenReturn(id);
+    when(ctx.bodyValidator(SupplyList.class))
+        .thenReturn(new BodyValidator<SupplyList>(
+            updatedJson,
+            SupplyList.class,
+            () -> javalinJackson.fromJsonString(updatedJson, SupplyList.class)));
+
+    supplylistController.editSupplyList(ctx);
+    verify(ctx).status(HttpStatus.OK);
+
+    // Confirm the update persisted in the database
+    when(ctx.pathParam("id")).thenReturn(id);
+    supplylistController.getList(ctx);
+    verify(ctx).json(supplylistCaptor.capture());
+    assertEquals("CHS", supplylistCaptor.getValue().school);
+    assertEquals("5th grade", supplylistCaptor.getValue().grade);
   }
 }

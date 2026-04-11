@@ -189,12 +189,7 @@ class SettingsControllerSpec {
     settingsDocuments.insertMany(testSettings);
     settingsDocuments.insertOne(specialSettings);
 
-    settingsController = new SettingsController(db);
-
-    SettingsController mockController = new SettingsController(db);
-
-    mockController = Mockito.spy(mockController);
-    //Mockito.doReturn(mockCollection).when(mockController).getSettings();
+    settingsController = new SettingsController(db, null);
   }
 
   @SuppressWarnings("unchecked")
@@ -308,7 +303,6 @@ class SettingsControllerSpec {
         .append("schools", List.of())
         .append("timeAvailability", new Document()));
 
-    settingsController = new SettingsController(db);
     settingsController.getSettings(ctx);
 
     settingsCaptor = ArgumentCaptor.forClass(Settings.class);
@@ -369,8 +363,6 @@ class SettingsControllerSpec {
         new Document("_id", SettingsController.SETTINGS_ID)
             .append("schools", List.of())
             .append("timeAvailability", new Document()));
-    settingsController = new SettingsController(db);
-
     Settings.SupplyItemOrder entry = new Settings.SupplyItemOrder();
     entry.itemTerm = "folder";
     entry.status = "unstaged";
@@ -401,7 +393,6 @@ class SettingsControllerSpec {
         new Document("_id", SettingsController.SETTINGS_ID)
             .append("schools", List.of())
             .append("timeAvailability", new Document()));
-    settingsController = new SettingsController(db);
 
     settingsController.getSettings(ctx);
 

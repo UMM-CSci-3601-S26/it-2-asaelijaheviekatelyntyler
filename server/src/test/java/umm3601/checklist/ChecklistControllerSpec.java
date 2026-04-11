@@ -198,7 +198,7 @@ class ChecklistControllerSpec {
     checklistDocuments.insertMany(testChecklists);
     checklistDocuments.insertOne(specialChecklist);
 
-    checklistController = new ChecklistController(db);
+    checklistController = new ChecklistController(db, null);
   }
 
   // Checks that the controller actually registers all its routes with Javalin.

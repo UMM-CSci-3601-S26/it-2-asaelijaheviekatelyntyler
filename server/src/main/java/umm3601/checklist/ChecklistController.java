@@ -40,6 +40,7 @@ import umm3601.family.Family.StudentInfo;
 import umm3601.settings.Settings;
 import umm3601.settings.SettingsController;
 import umm3601.supplylist.SupplyList;
+import umm3601.middleware.AuthMiddleware;
 
 // Define the Checklist class if it doesn't exist elsewhere
 
@@ -74,6 +75,8 @@ public class ChecklistController implements Controller {
   private final JacksonMongoCollection<Checklist> checklistCollection;
   private final JacksonMongoCollection<Settings> settingsCollection;
 
+  private final AuthMiddleware authMiddleware;
+
   // constructor used for testing:
   public ChecklistController(JacksonMongoCollection<Family> familyCollection,
       JacksonMongoCollection<SupplyList> supplyListCollection,
@@ -82,10 +85,11 @@ public class ChecklistController implements Controller {
     this.supplyListCollection = supplyListCollection;
     this.checklistCollection = checklistCollection;
     this.settingsCollection = null;
+    this.authMiddleware = new AuthMiddleware("test-secret");
   }
 
   // constructor used in server:
-  public ChecklistController(MongoDatabase db) {
+  public ChecklistController(MongoDatabase db, AuthMiddleware authMiddleware) {
     familyCollection = JacksonMongoCollection.builder().build(
         db, "families", Family.class, UuidRepresentation.STANDARD);
     supplyListCollection = JacksonMongoCollection.builder().build(
@@ -94,6 +98,7 @@ public class ChecklistController implements Controller {
         db, "checklists", Checklist.class, UuidRepresentation.STANDARD);
     settingsCollection = JacksonMongoCollection.builder().build(
         db, "settings", Settings.class, UuidRepresentation.STANDARD);
+    this.authMiddleware = authMiddleware;
   }
 
   // Normalizes a school name for matching: lowercase, strip trailing " school"
@@ -508,9 +513,21 @@ public class ChecklistController implements Controller {
     // server.get(API_CHECKLIST_FAMILY, this::printChecklistsByFamily);
 
     // Digital drive-day routes (persisted)
-    server.post(API_CHECKLIST, this::generateDigitalChecklists);
-    server.get(API_CHECKLIST, this::getStoredChecklists);
-    server.get("/checklists/export/pdf", this::exportChecklistsPdf);
+    server.post(API_CHECKLIST, ctx -> {
+      authMiddleware.handle(ctx);
+      AuthMiddleware.requireRole(ctx, "admin");
+      generateDigitalChecklists(ctx);
+    });
+    server.get(API_CHECKLIST, ctx -> {
+      authMiddleware.handle(ctx);
+      AuthMiddleware.requireRole(ctx, "admin", "volunteer");
+      getStoredChecklists(ctx);
+    });
+    server.get("/checklists/export/pdf", ctx -> {
+      authMiddleware.handle(ctx);
+      AuthMiddleware.requireRole(ctx, "admin");
+      exportChecklistsPdf(ctx);
+    });
 
     // server.get(API_CHECKLIST_BY_ID, this::getStoredChecklistById);
     // server.patch(API_CHECKLIST_ITEM, this::updateChecklistItem);

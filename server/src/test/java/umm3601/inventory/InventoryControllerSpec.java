@@ -181,7 +181,7 @@ public class InventoryControllerSpec {
     inventoryDocuments.insertMany(testInventory);
     inventoryDocuments.insertOne(sam);
 
-    inventoryController = new InventoryController(db);
+    inventoryController = new InventoryController(db, null);
   }
 
   // Checks that asking for all inventory items actually returns everything in the

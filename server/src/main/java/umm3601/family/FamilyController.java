@@ -28,6 +28,7 @@ import io.javalin.http.HttpStatus;
 
 // Misc Imports
 import umm3601.Controller;
+import umm3601.middleware.AuthMiddleware;
 
 /**
  * Controller for handling Family-related API routes.
@@ -55,8 +56,10 @@ public class FamilyController implements Controller {
   public static final String EMAIL_REGEX = "^[a-zA-Z0-9_!#$%&'*+/=?`{|}~^.-]+@[a-zA-Z0-9.-]+$";
 
   private final JacksonMongoCollection<Family> familyCollection;
+  private final AuthMiddleware authMiddleware;
 
-  public FamilyController(MongoDatabase database) {
+  public FamilyController(MongoDatabase database, AuthMiddleware authMiddleware) {
+    this.authMiddleware = authMiddleware;
     // Connects to the "families" collection using Jackson for serialization
     familyCollection = JacksonMongoCollection.builder().build(
         database,
@@ -234,15 +237,39 @@ public class FamilyController implements Controller {
    */
   @Override
   public void addRoutes(Javalin server) {
-    server.get(API_FAMILY, this::getFamilies);
-    server.post(API_FAMILY, this::addNewFamily);
+    server.get(API_FAMILY, ctx -> {
+      authMiddleware.handle(ctx);
+      AuthMiddleware.requireRole(ctx, "admin", "volunteer");
+      getFamilies(ctx);
+    });
+    server.post(API_FAMILY, ctx -> {
+      authMiddleware.handle(ctx);
+      AuthMiddleware.requireRole(ctx, "admin");
+      addNewFamily(ctx);
+    });
 
     // Specific routes FIRST
-    server.get(API_FAMILY_EXPORT, this::exportFamiliesAsCSV);
-    server.get(API_DASHBOARD, this::getDashboardStats);
+    server.get(API_FAMILY_EXPORT, ctx -> {
+      authMiddleware.handle(ctx);
+      AuthMiddleware.requireRole(ctx, "admin");
+      exportFamiliesAsCSV(ctx);
+    });
+    server.get(API_DASHBOARD, ctx -> {
+      authMiddleware.handle(ctx);
+      AuthMiddleware.requireRole(ctx, "admin", "volunteer");
+      getDashboardStats(ctx);
+    });
 
     // ID-based routes LAST
-    server.get(API_FAMILY_BY_ID, this::getFamily);
-    server.delete(API_FAMILY_BY_ID, this::deleteFamily);
+    server.get(API_FAMILY_BY_ID, ctx -> {
+      authMiddleware.handle(ctx);
+      AuthMiddleware.requireRole(ctx, "admin", "volunteer", "guardian");
+      getFamily(ctx);
+    });
+    server.delete(API_FAMILY_BY_ID, ctx -> {
+      authMiddleware.handle(ctx);
+      AuthMiddleware.requireRole(ctx, "admin");
+      deleteFamily(ctx);
+    });
   }
 }

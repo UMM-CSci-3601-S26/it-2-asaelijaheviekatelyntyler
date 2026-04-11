@@ -52,11 +52,23 @@ dependencies {
 
   // Mockito for testing
   testImplementation 'org.mockito:mockito-core:5.21.0'
+
+  implementation 'org.mindrot:jbcrypt:0.4'
+
+  implementation 'io.jsonwebtoken:jjwt-api:0.12.5'
+  implementation 'io.jsonwebtoken:jjwt-impl:0.12.5'
+  implementation 'io.jsonwebtoken:jjwt-jackson:0.12.5'
 }
 
 application {
   // Define the main class for the application
   mainClass = 'umm3601.Main'
+}
+
+run {
+  // Pass through JWT_SECRET from the environment if set,
+  // otherwise use a dev-only default so `./gradlew run` works locally.
+  environment 'JWT_SECRET', System.getenv('JWT_SECRET') ?: 'dev-secret-change-in-production!'
 }
 
 test {
