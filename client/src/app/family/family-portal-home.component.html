@@ -1,0 +1,69 @@
+<div class="family-portal-container">
+  @if (isLoading) {
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>Family Portal</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>Loading your family information...</mat-card-content>
+    </mat-card>
+  } @else if (error) {
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>Family Portal</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>{{ error }}</mat-card-content>
+    </mat-card>
+  } @else {
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>Family Portal</mat-card-title>
+        <mat-card-subtitle>
+          Your assigned pickup details and checklist
+        </mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <p>
+          <strong>Drive Day:</strong>
+          {{ summary?.driveDay?.date || 'Not set yet' }}
+        </p>
+        <p>
+          <strong>Announcement:</strong>
+          {{ summary?.driveDay?.message || 'No announcement posted yet.' }}
+        </p>
+        <p>
+          <strong>Assigned Time Slot:</strong>
+          {{ summary?.timeSlot || 'To be assigned' }}
+          ({{ summary?.timeSlotStatus || 'pending' }})
+        </p>
+      </mat-card-content>
+      <mat-card-actions>
+        <a mat-button color="primary" routerLink="/family-portal/form">
+          <mat-icon>edit</mat-icon>
+          Edit Family Form
+        </a>
+      </mat-card-actions>
+    </mat-card>
+
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>Your Kids' Checklists</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        @if (checklists.length === 0) {
+          <p>No checklist has been generated for your family yet.</p>
+        } @else {
+          @for (checklist of checklists; track checklist._id) {
+            <div class="checklist-item">
+              <h3>{{ checklist.studentName }} ({{ checklist.school }} - Grade {{ checklist.grade }})</h3>
+              <ul>
+                @for (item of checklist.checklist; track $index) {
+                  <li>{{ item.supply.item.join(', ') }}</li>
+                }
+              </ul>
+            </div>
+          }
+        }
+      </mat-card-content>
+    </mat-card>
+  }
+</div>

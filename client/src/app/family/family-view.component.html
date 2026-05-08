@@ -18,23 +18,24 @@
         <hr style="margin: 1rem 0;" />
 
         <p class="filters-description">
-          Soon to be added filters!
+          Filter by guardian account link status.
         </p>
 
         <div class="filter-container">
-        <!-- Search fields would go here -->
-        <!-- Preferred Filter Format (fit to css and inventory style): -->
-         <!-- <mat-form-field appearance="outline">
-                <mat-label class="filter">Item</mat-label>
-                <input matInput [ngModel]="item() ?? ''" (ngModelChange)="item.set($event?.trim() || undefined)"
-                  placeholder="contains..." data-cy="filter-item" />
-              </mat-form-field> -->
+          <mat-form-field appearance="outline">
+            <mat-label>Guardian Link Status</mat-label>
+            <mat-select [(ngModel)]="linkStatusFilter" data-test="guardianLinkStatusFilter">
+              <mat-option value="all">All Families</mat-option>
+              <mat-option value="linked">Linked Guardian Account</mat-option>
+              <mat-option value="manual">Manually Added Only</mat-option>
+            </mat-select>
+          </mat-form-field>
         </div>
 
         <div class="filter-extra">
-          <!-- Clear Filters Button
-           Note: One could use the inventory example but its best to make
-           clear a function in the component for easier maintenance -->
+          <button mat-stroked-button type="button" class="clear-button" (click)="clearFamilyFilters()" data-test="clearFamilyFiltersButton">
+            Clear Filters
+          </button>
         </div>
       </mat-card-content>
     </mat-card>
@@ -46,8 +47,18 @@
   @if (families()) {
   <div class="flex-1">
     <div class="family-cards-container flex-row gap-8 flex-wrap">
-      @for (family of families(); track family._id) {
-      <app-family-card class="family-card" [family]="family"></app-family-card>
+      @for (family of filteredFamilies; track family._id) {
+      <app-family-card
+        class="family-card"
+        [family]="family"
+        (requestDelete)="submitDeleteRequest(family)">
+      </app-family-card>
+      }
+
+      @if (filteredFamilies.length === 0) {
+        <p class="filters-description" data-test="emptyFilteredFamiliesMessage">
+          No families match this filter.
+        </p>
       }
     </div>
   </div>
@@ -65,13 +76,17 @@
   }
 </div>
 
-<!-- Export CSV button -->
-<button mat-raised-button (click)="downloadCSV()" matTooltipPosition="left"class="export-csv-button" data-test="exportCSVButton">
-  Export CSV
-</button>
+@if (canExportFamilies) {
+  <!-- Export CSV button -->
+  <button mat-raised-button (click)="downloadCSV()" matTooltipPosition="left"class="export-csv-button" data-test="exportCSVButton">
+    Export CSV
+  </button>
+}
 
-<!-- Add Family Button -->
-<button mat-fab class="add-family-button" matTooltip="Add Family" matTooltipPosition="left" routerLink="/families/new"
-  data-test="addFamilyButton">
-  <mat-icon class="md-24" aria-label="Add Family">add</mat-icon>
-</button>
+@if (canAddFamily) {
+  <!-- Add Family Button -->
+  <button mat-fab class="add-family-button" matTooltip="Add Family" matTooltipPosition="left" routerLink="/families/new"
+    data-test="addFamilyButton">
+    <mat-icon class="md-24" aria-label="Add Family">add</mat-icon>
+  </button>
+}

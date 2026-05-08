@@ -1,0 +1,90 @@
+<div class="family-portal-form-container">
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>Family Form</mat-card-title>
+      <mat-card-subtitle>
+        Complete this form to unlock your checklist and drive-day details.
+      </mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      @if (isLoading) {
+        <p>Loading family form...</p>
+      } @else {
+        <form [formGroup]="familyForm" (ngSubmit)="saveForm()">
+          <div class="form-grid">
+            <mat-form-field>
+              <mat-label>Guardian Name</mat-label>
+              <input matInput formControlName="guardianName">
+            </mat-form-field>
+
+            <mat-form-field>
+              <mat-label>Email</mat-label>
+              <input matInput type="email" formControlName="email">
+            </mat-form-field>
+
+            <mat-form-field>
+              <mat-label>Address</mat-label>
+              <input matInput formControlName="address">
+            </mat-form-field>
+          </div>
+
+          <h3>Students</h3>
+          <div formArrayName="students" class="students-container">
+            @for (student of students.controls; track $index; let i = $index) {
+              <div [formGroupName]="i" class="student-card">
+                <mat-form-field>
+                  <mat-label>Student Name</mat-label>
+                  <input matInput formControlName="name">
+                </mat-form-field>
+
+                <mat-form-field>
+                  <mat-label>Grade</mat-label>
+                  <mat-select formControlName="grade">
+                    @for (grade of grades; track grade) {
+                      <mat-option [value]="grade">{{ grade }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field>
+                  <mat-label>School</mat-label>
+                  <mat-select formControlName="school">
+                    @for (school of schools; track school.name) {
+                      <mat-option [value]="school.name">{{ school.name }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field>
+                  <mat-label>Requested Supplies (comma separated)</mat-label>
+                  <input matInput formControlName="requestedSupplies">
+                </mat-form-field>
+
+                <button mat-button color="warn" type="button" (click)="removeStudent(i)">
+                  Remove Student
+                </button>
+              </div>
+            }
+          </div>
+
+          <button mat-stroked-button type="button" (click)="addStudent()">
+            Add Student
+          </button>
+
+          <h3>Availability</h3>
+          <div class="availability-grid" formGroupName="timeAvailability">
+            <mat-checkbox formControlName="earlyMorning">{{ timeAvailabilityLabels.earlyMorning }}</mat-checkbox>
+            <mat-checkbox formControlName="lateMorning">{{ timeAvailabilityLabels.lateMorning }}</mat-checkbox>
+            <mat-checkbox formControlName="earlyAfternoon">{{ timeAvailabilityLabels.earlyAfternoon }}</mat-checkbox>
+            <mat-checkbox formControlName="lateAfternoon">{{ timeAvailabilityLabels.lateAfternoon }}</mat-checkbox>
+          </div>
+
+          <div class="actions">
+            <button mat-raised-button color="primary" type="submit">Save Family Form</button>
+          </div>
+        </form>
+      }
+    </mat-card-content>
+  </mat-card>
+</div>

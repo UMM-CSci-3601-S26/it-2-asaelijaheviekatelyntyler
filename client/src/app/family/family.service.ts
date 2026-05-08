@@ -51,6 +51,18 @@ export class FamilyService {
     return this.httpClient.delete<void>(`${this.familyUrl}/${id}`);
   }
 
+  requestFamilyDelete(id: string, message: string): Observable<unknown> {
+    return this.httpClient.post<void>(`${this.familyUrl}/${id}/delete-request`, { message });
+  }
+
+  getDeleteRequests(): Observable<Family[]> {
+    return this.httpClient.get<Family[]>(`${this.familyUrl}/delete-requests`);
+  }
+
+  restoreDeleteRequest(id: string): Observable<unknown> {
+    return this.httpClient.delete<void>(`${this.familyUrl}/${id}/delete-request`);
+  }
+
   // Method to fetch dashboard statistics from the API. It constructs the appropriate HTTP request and returns an Observable of a DashboardStats object.
   getDashboardStats(): Observable<DashboardStats> {
     const httpParams: HttpParams = new HttpParams();

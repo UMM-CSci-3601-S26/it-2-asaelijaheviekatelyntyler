@@ -127,4 +127,18 @@ export class MockFamilyService implements Pick<FamilyService, 'getFamilyById' | 
   exportFamilies(): Observable<string> {
     return of('csv-data');
   }
+
+  requestFamilyDelete(id: string, message: string): Observable<unknown> {
+    console.log('requestFamilyDelete called with', id, message);
+    return of({ success: true });
+  }
+
+  getDeleteRequests(): Observable<Family[]> {
+    return of(MockFamilyService.testFamilies.filter(f => f.deleteRequest?.requested));
+  }
+
+  restoreDeleteRequest(id: string): Observable<unknown> {
+    console.log('restoreDeleteRequest called with', id);
+    return of({ success: true });
+  }
 }

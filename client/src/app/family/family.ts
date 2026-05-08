@@ -24,12 +24,22 @@ export interface AvailabilityOptions {
 
 export interface Family {
   _id?: string;
+  ownerUserId?: string;
+  profileComplete?: boolean;
   guardianName: string;
   email: string;
   address: string;
   timeSlot: string;
   students: StudentInfo[];
   timeAvailability: AvailabilityOptions;
+  deleteRequest?: FamilyDeleteRequest;
+}
+
+export interface FamilyDeleteRequest {
+  requested: boolean;
+  message?: string;
+  requestedByUserId?: string;
+  requestedAt?: string;
 }
 
 // An interface representing statistics for the dashboard, including counts of students per school and grade, as well as the total number of families served.

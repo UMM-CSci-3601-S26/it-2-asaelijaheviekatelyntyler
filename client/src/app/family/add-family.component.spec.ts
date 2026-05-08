@@ -1,6 +1,7 @@
 // Angular and Material Imports
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
+import { Component } from '@angular/core';
 import { AbstractControl, FormGroup, UntypedFormGroup } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
@@ -16,6 +17,9 @@ import { AddFamilyComponent } from './add-family.component';
 import { FamilyService } from './family.service';
 import { SettingsService } from '../settings/settings.service';
 import { AppSettings } from '../settings/settings';
+
+@Component({ template: '', standalone: true })
+class DummyRouteComponent {}
 
 
 // Tests for the AddFamilyComponent
@@ -34,7 +38,9 @@ describe('AddFamilyComponent', () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        provideRouter([]),
+        provideRouter([
+          { path: 'families', component: DummyRouteComponent }
+        ]),
         {
           provide: FamilyService,
           useClass: MockFamilyService
