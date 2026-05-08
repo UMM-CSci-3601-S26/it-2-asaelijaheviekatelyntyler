@@ -22,6 +22,7 @@
  */
 import { inject, Injectable } from "@angular/core";
 import { CanActivate, Router, ActivatedRouteSnapshot } from "@angular/router";
+import { catchError, map, of } from "rxjs";
 import { AuthService } from "./auth-service";
 
 @Injectable({ providedIn: 'root' })
@@ -30,15 +31,30 @@ export class RoleGuard implements CanActivate {
   router = inject(Router);
 
   canActivate(route: ActivatedRouteSnapshot) {
-    if (!this.authService.loggedIn) {
-      this.router.navigate(['/login']);
-      return false;
-    }
-    const allowed = route.data['roles'] as string[];
-    if (!allowed.includes(this.authService.role!)) {
-      this.router.navigate(['/']);
-      return false;
-    }
-    return true;
+    return this.authService.syncAccessProfile().pipe(
+      map(() => {
+        const allowed = (route.data['roles'] as string[] | undefined) ?? [];
+        if (!this.authService.loggedIn) {
+          this.router.navigate(['/login']);
+          return false;
+        }
+        if (allowed.length > 0 && !allowed.includes(this.authService.systemRole!)) {
+          this.router.navigate(['/']);
+          return false;
+        }
+
+        const requiredPermissions = (route.data['permissions'] as string[] | undefined) ?? [];
+        if (requiredPermissions.length > 0 && !this.authService.hasAllPermissions(requiredPermissions)) {
+          this.router.navigate(['/']);
+          return false;
+        }
+
+        return true;
+      }),
+      catchError(() => {
+        this.router.navigate(['/login']);
+        return of(false);
+      })
+    );
   }
 }

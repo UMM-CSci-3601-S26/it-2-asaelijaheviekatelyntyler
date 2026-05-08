@@ -1,6 +1,6 @@
 // Angular Imports
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRouteSnapshot, Router } from '@angular/router';
+import { Router } from '@angular/router';
 
 // Guards Under Test
 import { AuthGuard } from './auth.guard';

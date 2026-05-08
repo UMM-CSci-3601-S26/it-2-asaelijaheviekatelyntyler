@@ -1,6 +1,7 @@
 // Angular Imports
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRouteSnapshot, Router } from '@angular/router';
+import { of, throwError } from 'rxjs';
 
 // Guard Under Test
 import { RoleGuard } from './role.guard';
@@ -15,7 +16,12 @@ import { AuthService } from './auth-service';
 describe('RoleGuard', () => {
   let guard: RoleGuard;
   let routerSpy: jasmine.SpyObj<Router>;
-  let authServiceStub: { loggedIn: boolean; role: string | null };
+  let authServiceStub: {
+    loggedIn: boolean;
+    systemRole: string | null;
+    hasAllPermissions: jasmine.Spy;
+    syncAccessProfile: jasmine.Spy;
+  };
 
   /** Helper that builds a minimal ActivatedRouteSnapshot with a roles data array. */
   function buildRoute(roles: string[]): ActivatedRouteSnapshot {
@@ -26,7 +32,12 @@ describe('RoleGuard', () => {
 
   beforeEach(() => {
     routerSpy = jasmine.createSpyObj('Router', ['navigate']);
-    authServiceStub = { loggedIn: true, role: 'volunteer' };
+    authServiceStub = {
+      loggedIn: true,
+      systemRole: 'VOLUNTEER',
+      hasAllPermissions: jasmine.createSpy('hasAllPermissions').and.returnValue(true),
+      syncAccessProfile: jasmine.createSpy('syncAccessProfile').and.returnValue(of('VOLUNTEER'))
+    };
 
     TestBed.configureTestingModule({
       providers: [
@@ -43,44 +54,90 @@ describe('RoleGuard', () => {
     expect(guard).toBeTruthy();
   });
 
-  it('should return true when the user role is in the allowed list', () => {
-    authServiceStub.role = 'admin';
+  it('should return true when the user role is in the allowed list', (done) => {
+    authServiceStub.systemRole = 'ADMIN';
     authServiceStub.loggedIn = true;
 
-    expect(guard.canActivate(buildRoute(['admin']))).toBeTrue();
-    expect(routerSpy.navigate).not.toHaveBeenCalled();
+    guard.canActivate(buildRoute(['ADMIN'])).subscribe(result => {
+      expect(result).toBeTrue();
+      expect(routerSpy.navigate).not.toHaveBeenCalled();
+      done();
+    });
   });
 
-  it('should allow any role listed in the allowed roles array', () => {
-    authServiceStub.role = 'guardian';
+  it('should allow any role listed in the allowed roles array', (done) => {
+    authServiceStub.systemRole = 'GUARDIAN';
     authServiceStub.loggedIn = true;
 
-    expect(guard.canActivate(buildRoute(['admin', 'guardian']))).toBeTrue();
+    guard.canActivate(buildRoute(['ADMIN', 'GUARDIAN'])).subscribe(result => {
+      expect(result).toBeTrue();
+      done();
+    });
   });
 
-  it('should return false and navigate to / when role is not in allowed list', () => {
-    authServiceStub.role = 'volunteer';
+  it('should return false and navigate to / when role is not in allowed list', (done) => {
+    authServiceStub.systemRole = 'VOLUNTEER';
     authServiceStub.loggedIn = true;
 
-    expect(guard.canActivate(buildRoute(['admin']))).toBeFalse();
-    expect(routerSpy.navigate).toHaveBeenCalledWith(['/']);
+    guard.canActivate(buildRoute(['ADMIN'])).subscribe(result => {
+      expect(result).toBeFalse();
+      expect(routerSpy.navigate).toHaveBeenCalledWith(['/']);
+      done();
+    });
   });
 
-  it('should return false and navigate to /login when not logged in', () => {
+  it('should return false and navigate to /login when syncing the session fails', (done) => {
     authServiceStub.loggedIn = false;
-    authServiceStub.role = null;
+    authServiceStub.systemRole = null;
+    authServiceStub.syncAccessProfile.and.returnValue(throwError(() => new Error('not authenticated')));
 
-    expect(guard.canActivate(buildRoute(['admin']))).toBeFalse();
-    expect(routerSpy.navigate).toHaveBeenCalledWith(['/login']);
+    guard.canActivate(buildRoute(['ADMIN'])).subscribe(result => {
+      expect(result).toBeFalse();
+      expect(routerSpy.navigate).toHaveBeenCalledWith(['/login']);
+      done();
+    });
   });
 
-  it('should check the AuthGuard (loggedIn) BEFORE the role, so /login takes priority over /', () => {
-    // If somehow role is set but loggedIn is false, we should still go to /login.
-    authServiceStub.loggedIn = false;
-    authServiceStub.role = 'volunteer';
+  it('should deny access when permissions are required and missing', (done) => {
+    authServiceStub.systemRole = 'ADMIN';
+    authServiceStub.hasAllPermissions.and.returnValue(false);
 
-    guard.canActivate(buildRoute(['volunteer']));
+    const snapshot = new ActivatedRouteSnapshot();
+    Object.assign(snapshot, { data: { roles: ['ADMIN'], permissions: ['edit_inventory_item'] } });
 
-    expect(routerSpy.navigate).toHaveBeenCalledWith(['/login']);
+    guard.canActivate(snapshot).subscribe(result => {
+      expect(result).toBeFalse();
+      expect(authServiceStub.hasAllPermissions).toHaveBeenCalledWith(['edit_inventory_item']);
+      expect(routerSpy.navigate).toHaveBeenCalledWith(['/']);
+      done();
+    });
+  });
+
+  it('should allow access when permissions are required and present', (done) => {
+    authServiceStub.systemRole = 'ADMIN';
+    authServiceStub.hasAllPermissions.and.returnValue(true);
+
+    const snapshot = new ActivatedRouteSnapshot();
+    Object.assign(snapshot, { data: { roles: ['ADMIN'], permissions: ['edit_inventory_item'] } });
+
+    guard.canActivate(snapshot).subscribe(result => {
+      expect(result).toBeTrue();
+      expect(authServiceStub.hasAllPermissions).toHaveBeenCalledWith(['edit_inventory_item']);
+      done();
+    });
+  });
+
+  it('should allow access when route has no role or permission requirements', (done) => {
+    authServiceStub.systemRole = 'VOLUNTEER';
+    authServiceStub.hasAllPermissions.calls.reset();
+
+    const snapshot = new ActivatedRouteSnapshot();
+    Object.assign(snapshot, { data: {} });
+
+    guard.canActivate(snapshot).subscribe(result => {
+      expect(result).toBeTrue();
+      expect(authServiceStub.hasAllPermissions).not.toHaveBeenCalled();
+      done();
+    });
   });
 });
