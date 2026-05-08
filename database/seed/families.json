@@ -3,6 +3,8 @@
     "guardianName": "Jane Doe",
     "email": "jane@email.com",
     "address": "123 Street",
+    "profileComplete": true,
+    "timeSlot": "to be assigned",
     "timeAvailability": {
       "earlyMorning": true,
       "lateMorning": true,
@@ -32,6 +34,8 @@
     "guardianName": "John Doe",
     "email": "john@email.com",
     "address": "1232 Street",
+    "profileComplete": true,
+    "timeSlot": "to be assigned",
     "timeAvailability": {
       "earlyMorning": false,
       "lateMorning": true,
@@ -70,6 +74,8 @@
     "guardianName": "Janis Dorothy",
     "email": "janis@email.com",
     "address": "123 Street",
+    "profileComplete": true,
+    "timeSlot": "to be assigned",
     "timeAvailability": {
       "earlyMorning": false,
       "lateMorning": true,
@@ -97,6 +103,8 @@
     "guardianName": "Michael Thompson",
     "email": "michael.t@email.com",
     "address": "987 Spruce Drive",
+    "profileComplete": true,
+    "timeSlot": "to be assigned",
     "timeAvailability": {
       "earlyMorning": false,
       "lateMorning": true,
@@ -108,7 +116,7 @@
         "name": "Ella",
         "grade": "K",
         "school": "Hancock Elementary School",
-        "requestedSupplies": ["Crayons", "Glue"]
+        "requestedSupplies": []
       }
     ]
   },
@@ -116,6 +124,8 @@
     "guardianName": "Priya Singh",
     "email": "priya.singh@email.com",
     "address": "246 Willow Way",
+    "profileComplete": true,
+    "timeSlot": "to be assigned",
     "timeAvailability": {
       "earlyMorning": true,
       "lateMorning": false,
@@ -127,7 +137,7 @@
         "name": "Arjun",
         "grade": "4",
         "school": "Herman-Norcross Elementary School",
-        "requestedSupplies": ["Notebook", "Markers"]
+        "requestedSupplies": []
       },
       {
         "name": "Neha",
@@ -141,6 +151,8 @@
     "guardianName": "Linda Wu",
     "email": "linda.wu@email.com",
     "address": "135 Birch Blvd",
+    "profileComplete": true,
+    "timeSlot": "to be assigned",
     "timeAvailability": {
       "earlyMorning": false,
       "lateMorning": false,
@@ -166,6 +178,8 @@
     "guardianName": "Omar Al-Farsi",
     "email": "omar.alfarsi@email.com",
     "address": "753 Poplar Court",
+    "profileComplete": true,
+    "timeSlot": "to be assigned",
     "timeAvailability": {
       "earlyMorning": true,
       "lateMorning": true,
@@ -185,6 +199,8 @@
     "guardianName": "Sophia Rossi",
     "email": "sophia.rossi@email.com",
     "address": "159 Aspen Lane",
+    "profileComplete": true,
+    "timeSlot": "to be assigned",
     "timeAvailability": {
       "earlyMorning": false,
       "lateMorning": true,

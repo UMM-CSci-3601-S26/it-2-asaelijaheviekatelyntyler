@@ -1,20 +1,26 @@
 [
   {
-    "username": "admin-example",
-    "passwordHash": "$2a$12$99glR4uLoKawCx6xUxvUVuCuEzD3vo4W1gz7X5.80Zq6OlQQFFjju",
+    "username": "addy",
+    "passwordHash": "$2a$12$05sHfXuH7y0SqDImhn3xH.u/Sk5j2NRa2Pd2q.8VnZO039EV4pyPq",
     "fullName": "Katelyn Money",
-    "role": "admin"
+    "email": "admin@readyforsupplies.org",
+    "systemRole": "ADMIN",
+    "jobRole": null
   },
   {
-    "username": "volunteer-example",
-    "passwordHash": "$2a$12$99glR4uLoKawCx6xUxvUVuCuEzD3vo4W1gz7X5.80Zq6OlQQFFjju",
+    "username": "viorel",
+    "passwordHash": "$2a$12$05sHfXuH7y0SqDImhn3xH.u/Sk5j2NRa2Pd2q.8VnZO039EV4pyPq",
     "fullName": "Random Person",
-    "role": "volunteer"
+    "email": "volunteer@readyforsupplies.org",
+    "systemRole": "VOLUNTEER",
+    "jobRole": "volunteer_base"
   },
   {
-    "username": "guardian-example",
-    "passwordHash": "$2a$12$99glR4uLoKawCx6xUxvUVuCuEzD3vo4W1gz7X5.80Zq6OlQQFFjju",
+    "username": "gwen",
+    "passwordHash": "$2a$12$05sHfXuH7y0SqDImhn3xH.u/Sk5j2NRa2Pd2q.8VnZO039EV4pyPq",
     "fullName": "Random Person",
-    "role": "guardian"
+    "email": null,
+    "systemRole": "GUARDIAN",
+    "jobRole": null
   }
 ]

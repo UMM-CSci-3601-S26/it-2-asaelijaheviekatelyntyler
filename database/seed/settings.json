@@ -16,6 +16,9 @@
       "lateMorning": "9:00–10:00 AM",
       "earlyAfternoon": "12:00–1:00 PM",
       "lateAfternoon": "1:00–2:00 PM"
-    }
+    },
+    "driveDay": {
+      "date": "01/01/2025",
+      "message": "Our next drive day is scheduled for January 1, 2025. Please check back for updates and sign up to volunteer or receive support!"}
   }
 ]
