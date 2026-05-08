@@ -7,6 +7,7 @@ import { SupplyListComponent } from './supplylist.component';
 import { SupplyListService } from './supplylist.service';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { AuthService } from '../auth/auth-service';
 
 describe('SupplyList Table', () => {
   let supplylistTable: SupplyListComponent;
@@ -20,6 +21,7 @@ describe('SupplyList Table', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: SupplyListService, useClass: MockSupplyListService },
+        { provide: AuthService, useValue: { hasPermission: () => true } },
         provideRouter([])
       ],
     });
@@ -452,6 +454,7 @@ describe('Misbehaving SupplyList Table', () => {
           provide: SupplyListService,
           useValue: supplylistServiceStub
         },
+        { provide: AuthService, useValue: { hasPermission: () => true } },
         provideRouter([])
       ],
     })
@@ -496,6 +499,7 @@ describe('SupplyListComponent#toLabel()', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: SupplyListService, useClass: MockSupplyListService },
+        { provide: AuthService, useValue: { hasPermission: () => true } },
         provideRouter([])
       ],
     });
@@ -602,6 +606,7 @@ describe('SupplyListComponent#cancelEdit() without prior startEdit', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: SupplyListService, useClass: MockSupplyListService },
+        { provide: AuthService, useValue: { hasPermission: () => true } },
         provideRouter([])
       ],
     });

@@ -28,6 +28,7 @@ import { InventoryService } from './inventory.service';
 import { MatMenu } from "@angular/material/menu";
 import { TermsService } from '../terms/terms.service';
 import { Terms } from '../terms/terms';
+import { AuthService } from '../auth/auth-service';
 
 @Component({
   selector: 'app-inventory-component',
@@ -89,6 +90,23 @@ export class InventoryTableComponent {
   private snackBar = inject(MatSnackBar);
   private inventoryService = inject(InventoryService);
   private termsService = inject(TermsService);
+  private authService = inject(AuthService);
+
+  get canAddInventory(): boolean {
+    return this.authService.hasPermission('add_inventory_item');
+  }
+
+  get canEditInventory(): boolean {
+    return this.authService.hasPermission('edit_inventory_item');
+  }
+
+  get canDeleteInventory(): boolean {
+    return this.authService.hasPermission('delete_inventory_item');
+  }
+
+  get canManageInventory(): boolean {
+    return this.canEditInventory || this.canDeleteInventory;
+  }
 
   // Shared vocabulary loaded from /api/terms for autocomplete in inline edit
   terms: Terms = { item: [], brand: [], color: [], size: [], type: [], material: [], style: [] };
@@ -159,6 +177,9 @@ export class InventoryTableComponent {
    * - if confirmed -> call service and remove from local table data
    */
   confirmDelete(id: string | undefined) {
+    if (!this.canDeleteInventory) {
+      return;
+    }
     if (!id) {
       this.errMsg.set('Cannot delete: missing item ID');
       return;
@@ -187,6 +208,9 @@ export class InventoryTableComponent {
    * Calling again while a new row is already pending is a no-op.
    */
   addRow() {
+    if (!this.canAddInventory) {
+      return;
+    }
     if (this.editingRowId === this.NEW_ROW_ID) {
       return;
     }
@@ -204,6 +228,9 @@ export class InventoryTableComponent {
    * Stores a deep copy so changes can be reverted on cancel.
    */
   startEdit(row: Inventory) {
+    if (!this.canEditInventory) {
+      return;
+    }
     this.editingRowId = row._id ?? null;
     this.editingBackup = JSON.parse(JSON.stringify(row));
   }
@@ -213,6 +240,9 @@ export class InventoryTableComponent {
    * then exits edit mode.
    */
   saveEdit(row: Inventory) {
+    if (!this.canEditInventory) {
+      return;
+    }
     if (!row._id) {
       return;
     }
@@ -246,6 +276,9 @@ export class InventoryTableComponent {
    * Cancels editing, reverting the row to its original values.
    */
   cancelEdit(row: Inventory) {
+    if (!this.canEditInventory) {
+      return;
+    }
     if (row._id === this.NEW_ROW_ID) {
       // Discard the unsaved new row entirely
       this.dataSource.data = this.dataSource.data.filter(i => i._id !== this.NEW_ROW_ID);

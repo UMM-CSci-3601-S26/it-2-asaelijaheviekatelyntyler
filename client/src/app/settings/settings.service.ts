@@ -7,7 +7,7 @@ import { Observable } from 'rxjs';
 
 // Environment and Settings Interface Imports
 import { environment } from '../../environments/environment';
-import { AppSettings, SchoolInfo, SupplyItemOrder, TimeAvailabilityLabels } from './settings';
+import { AppSettings, DriveDay, SchoolInfo, SupplyItemOrder, TimeAvailabilityLabels } from './settings';
 
 @Injectable({
   providedIn: 'root'
@@ -35,5 +35,9 @@ export class SettingsService {
   // Replaces the full supply order list. Only touches the supplyOrder field.
   updateSupplyOrder(order: SupplyItemOrder[]): Observable<void> {
     return this.httpClient.patch<void>(`${this.settingsUrl}/supplyOrder`, { supplyOrder: order });
+  }
+
+  updateDriveDay(driveDay: DriveDay): Observable<void> {
+    return this.httpClient.patch<void>(`${this.settingsUrl}/driveDay`, driveDay);
   }
 }

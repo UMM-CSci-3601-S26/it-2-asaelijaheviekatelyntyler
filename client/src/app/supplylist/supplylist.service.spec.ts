@@ -196,6 +196,19 @@ describe('SupplyListService', () => {
       });
     });
 
+    it('correctly calls api/inventory with filter parameter \'style\'', () => {
+      const mockedMethod = spyOn(httpClient, 'get').and.returnValue(of(testSupplyList));
+
+      supplylistService.getSupplyList({ style: 'Classic' }).subscribe(() => {
+        expect(mockedMethod)
+          .withContext('one call')
+          .toHaveBeenCalledTimes(1);
+        expect(mockedMethod)
+          .withContext('talks to the correct endpoint')
+          .toHaveBeenCalledWith(supplylistService.supplylistUrl, { params: new HttpParams().set('style', 'Classic') });
+      });
+    });
+
     it('correctly calls api/inventory with multiple filter parameters', () => {
       const mockedMethod = spyOn(httpClient, 'get').and.returnValue(of(testSupplyList));
 

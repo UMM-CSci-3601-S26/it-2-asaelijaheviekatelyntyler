@@ -155,16 +155,18 @@
                 <mat-panel-description>{{ gradeGroup.teachers[0]?.items?.length ?? 0 }} item(s)</mat-panel-description>
               </mat-expansion-panel-header>
 
-              <div class="grade-add-row">
-                <button
-                  mat-stroked-button
-                  color="primary"
-                  [routerLink]="['/supplylist/new']"
-                  [queryParams]="{ school: schoolGroup.school, grade: gradeGroup.grade }"
-                  data-cy="add-item-button">
-                  <mat-icon>add</mat-icon> Add Item
-                </button>
-              </div>
+              @if (canAddSupplyList) {
+                <div class="grade-add-row">
+                  <button
+                    mat-stroked-button
+                    color="primary"
+                    [routerLink]="['/supplylist/new']"
+                    [queryParams]="{ school: schoolGroup.school, grade: gradeGroup.grade }"
+                    data-cy="add-item-button">
+                    <mat-icon>add</mat-icon> Add Item
+                  </button>
+                </div>
+              }
 
               @for (teacherGroup of gradeGroup.teachers; track teacherGroup.teacher) {
                 <section class="teacher-group">
@@ -229,14 +231,20 @@
                         } @else {
                           <!-- Display mode -->
                           <span class="item-label" data-cy="supplylist-item-label">{{ toLabel(element) }}</span>
-                          <div class="item-actions">
-                            <button mat-icon-button matTooltip="Edit" (click)="startEdit(element)" data-cy="edit-item">
-                              <mat-icon>edit</mat-icon>
-                            </button>
-                            <button mat-icon-button color="warn" matTooltip="Delete" (click)="confirmDelete(element._id)" data-cy="delete-item">
-                              <mat-icon>delete</mat-icon>
-                            </button>
-                          </div>
+                          @if (canEditSupplyList || canDeleteSupplyList) {
+                            <div class="item-actions">
+                              @if (canEditSupplyList) {
+                                <button mat-icon-button matTooltip="Edit" (click)="startEdit(element)" data-cy="edit-item">
+                                  <mat-icon>edit</mat-icon>
+                                </button>
+                              }
+                              @if (canDeleteSupplyList) {
+                                <button mat-icon-button color="warn" matTooltip="Delete" (click)="confirmDelete(element._id)" data-cy="delete-item">
+                                  <mat-icon>delete</mat-icon>
+                                </button>
+                              }
+                            </div>
+                          }
                         }
 
                       </li>

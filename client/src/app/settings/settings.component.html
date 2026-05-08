@@ -12,31 +12,35 @@
           <div class="tab-content">
 
             <!-- Add School Form -->
-            <form [formGroup]="addSchoolForm" (ngSubmit)="addSchool()">
-              <div class="add-school-row">
-                <mat-form-field>
-                  <mat-label>School Name</mat-label>
-                  <input matInput formControlName="name" required>
-                  <mat-error *ngIf="addSchoolForm.get('name')?.hasError('required')">Name is required</mat-error>
-                  <mat-error *ngIf="addSchoolForm.get('name')?.hasError('minlength')">Name must be at least 2 characters</mat-error>
-                </mat-form-field>
+            @if (canEditSchools) {
+              <form [formGroup]="addSchoolForm" (ngSubmit)="addSchool()">
+                <div class="add-school-row">
+                  <mat-form-field>
+                    <mat-label>School Name</mat-label>
+                    <input matInput formControlName="name" required>
+                    <mat-error *ngIf="addSchoolForm.get('name')?.hasError('required')">Name is required</mat-error>
+                    <mat-error *ngIf="addSchoolForm.get('name')?.hasError('minlength')">Name must be at least 2 characters</mat-error>
+                  </mat-form-field>
 
-                <button mat-raised-button color="primary" type="submit" [disabled]="!addSchoolForm.valid">
-                  Add School
-                </button>
-              </div>
-            </form>
+                  <button mat-raised-button color="primary" type="submit" [disabled]="!addSchoolForm.valid">
+                    Add School
+                  </button>
+                </div>
+              </form>
+            }
 
             <!-- Current Schools List -->
             <mat-list>
               @for (school of schools; track $index; let i = $index) {
                 <mat-list-item>
                   <span matListItemTitle>{{ school.name }}</span>
-                  <button matListItemMeta mat-icon-button color="warn"
-                          (click)="removeSchool(i)"
-                          [attr.aria-label]="'Remove ' + school.name">
-                    <mat-icon>delete</mat-icon>
-                  </button>
+                  @if (canEditSchools) {
+                    <button matListItemMeta mat-icon-button color="warn"
+                            (click)="removeSchool(i)"
+                            [attr.aria-label]="'Remove ' + school.name">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  }
                 </mat-list-item>
               } @empty {
                 <mat-list-item>
@@ -83,12 +87,46 @@
                   <mat-error *ngIf="timeAvailabilityForm.get('lateAfternoon')?.hasError('required')">Required</mat-error>
                 </mat-form-field>
 
-                <div class="save-button">
-                  <button mat-raised-button color="primary" type="submit" [disabled]="!timeAvailabilityForm.valid">
-                    Save Time Availability
-                  </button>
-                </div>
+                @if (canEditTimeAvailability) {
+                  <div class="save-button">
+                    <button mat-raised-button color="primary" type="submit" [disabled]="!timeAvailabilityForm.valid">
+                      Save Time Availability
+                    </button>
+                  </div>
+                }
 
+              </div>
+            </form>
+          </div>
+        </mat-tab>
+
+        <!-- ── Drive Day Tab ── -->
+        <mat-tab label="Drive Day">
+          <div class="tab-content">
+            <p class="tab-description">
+              Set the drive day and optional announcement message shown to families in the family portal.
+            </p>
+
+            <form [formGroup]="driveDayForm" (ngSubmit)="saveDriveDay()">
+              <div class="flex-col">
+                <mat-form-field>
+                  <mat-label>Drive Day Date</mat-label>
+                  <input matInput type="date" formControlName="date">
+                  <mat-error *ngIf="driveDayForm.get('date')?.hasError('required')">Required</mat-error>
+                </mat-form-field>
+
+                <mat-form-field>
+                  <mat-label>Message (optional)</mat-label>
+                  <textarea matInput rows="3" formControlName="message" placeholder="e.g. Please arrive 10 minutes early."></textarea>
+                </mat-form-field>
+
+                @if (canEditDriveDay) {
+                  <div class="save-button">
+                    <button mat-raised-button color="primary" type="submit" [disabled]="!driveDayForm.valid">
+                      Save Drive Day
+                    </button>
+                  </div>
+                }
               </div>
             </form>
           </div>
@@ -104,15 +142,17 @@
               <strong>Not Given</strong> items are excluded from checklists entirely.
             </p>
 
-            <div class="save-button" style="margin-bottom: 16px;">
-              <button mat-raised-button color="primary" (click)="saveSupplyOrder()">
-                Save Drive Order
-              </button>
-              <button mat-raised-button color="accent" (click)="saveAndGenerateChecklists()">
-                <mat-icon>playlist_add_check</mat-icon>
-                Save &amp; Generate Checklists
-              </button>
-            </div>
+            @if (canEditSupplyOrder) {
+              <div class="save-button" style="margin-bottom: 16px;">
+                <button mat-raised-button color="primary" (click)="saveSupplyOrder()">
+                  Save Drive Order
+                </button>
+                <button mat-raised-button color="accent" (click)="saveAndGenerateChecklists()">
+                  <mat-icon>playlist_add_check</mat-icon>
+                  Save &amp; Generate Checklists
+                </button>
+              </div>
+            }
 
             <div class="drive-order-columns">
 
@@ -131,14 +171,16 @@
                     <div cdkDrag class="supply-order-item">
                       <mat-icon cdkDragHandle class="drag-handle">drag_indicator</mat-icon>
                       <span class="item-label">{{ term }}</span>
-                      <span class="item-actions">
-                        <button mat-icon-button (click)="moveToUnstaged(term)" title="Move to Unstaged">
-                          <mat-icon>arrow_forward</mat-icon>
-                        </button>
-                        <button mat-icon-button color="warn" (click)="moveToNotGiven(term)" title="Mark as Not Given">
-                          <mat-icon>block</mat-icon>
-                        </button>
-                      </span>
+                      @if (canEditSupplyOrder) {
+                        <span class="item-actions">
+                          <button mat-icon-button (click)="moveToUnstaged(term)" title="Move to Unstaged">
+                            <mat-icon>arrow_forward</mat-icon>
+                          </button>
+                          <button mat-icon-button color="warn" (click)="moveToNotGiven(term)" title="Mark as Not Given">
+                            <mat-icon>block</mat-icon>
+                          </button>
+                        </span>
+                      }
                     </div>
                   }
                   @empty {
@@ -158,14 +200,16 @@
                     <div class="supply-order-item">
                       <mat-icon class="status-icon">inventory_2</mat-icon>
                       <span class="item-label">{{ term }}</span>
-                      <span class="item-actions">
-                        <button mat-icon-button (click)="moveToStaged(term)" title="Add to Staged">
-                          <mat-icon>arrow_back</mat-icon>
-                        </button>
-                        <button mat-icon-button color="warn" (click)="moveToNotGiven(term)" title="Mark as Not Given">
-                          <mat-icon>block</mat-icon>
-                        </button>
-                      </span>
+                      @if (canEditSupplyOrder) {
+                        <span class="item-actions">
+                          <button mat-icon-button (click)="moveToStaged(term)" title="Add to Staged">
+                            <mat-icon>arrow_back</mat-icon>
+                          </button>
+                          <button mat-icon-button color="warn" (click)="moveToNotGiven(term)" title="Mark as Not Given">
+                            <mat-icon>block</mat-icon>
+                          </button>
+                        </span>
+                      }
                     </div>
                   }
                   @empty {
@@ -185,14 +229,16 @@
                     <div class="supply-order-item not-given-item">
                       <mat-icon class="status-icon not-given-icon">do_not_disturb</mat-icon>
                       <span class="item-label">{{ term }}</span>
-                      <span class="item-actions">
-                        <button mat-icon-button (click)="moveToStaged(term)" title="Add to Staged">
-                          <mat-icon>format_list_numbered</mat-icon>
-                        </button>
-                        <button mat-icon-button (click)="moveToUnstaged(term)" title="Move to Unstaged">
-                          <mat-icon>arrow_back</mat-icon>
-                        </button>
-                      </span>
+                      @if (canEditSupplyOrder) {
+                        <span class="item-actions">
+                          <button mat-icon-button (click)="moveToStaged(term)" title="Add to Staged">
+                            <mat-icon>format_list_numbered</mat-icon>
+                          </button>
+                          <button mat-icon-button (click)="moveToUnstaged(term)" title="Move to Unstaged">
+                            <mat-icon>arrow_back</mat-icon>
+                          </button>
+                        </span>
+                      }
                     </div>
                   }
                   @empty {

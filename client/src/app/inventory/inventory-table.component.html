@@ -209,7 +209,7 @@
     <th mat-header-cell *matHeaderCellDef> Actions </th>
     <td mat-cell *matCellDef="let row">
       <!-- The three-dot icon button -->
-      <button mat-icon-button [matMenuTriggerFor]="rowMenu" (click)="$event.stopPropagation(); currentRow = row"
+      <button *ngIf="canManageInventory" mat-icon-button [matMenuTriggerFor]="rowMenu" (click)="$event.stopPropagation(); currentRow = row"
         aria-label="Row actions menu">
         <mat-icon>more_vert</mat-icon> <!-- Make vertical dots -->
       </button>
@@ -227,34 +227,36 @@
 <!-- Row Actions Menu -->
 <mat-menu #rowMenu="matMenu">
   <!-- Edit: shown only when row is NOT being edited -->
-  <button mat-menu-item *ngIf="editingRowId !== currentRow?._id"
+  <button mat-menu-item *ngIf="canEditInventory && editingRowId !== currentRow?._id"
     class="inventory-action edit-action"
     (click)="startEdit(currentRow!)" data-cy="edit-action">
     <mat-icon>edit</mat-icon>
     <span>Edit</span>
   </button>
   <!-- Save: shown only when this row IS being edited -->
-  <button mat-menu-item *ngIf="editingRowId === currentRow?._id && editingRowId !== null"
+  <button mat-menu-item *ngIf="canEditInventory && editingRowId === currentRow?._id && editingRowId !== null"
     class="inventory-action save-action"
     (click)="saveEdit(currentRow!)" data-cy="save-action">
     <mat-icon>save</mat-icon>
     <span>Save</span>
   </button>
   <!-- Cancel: shown only when this row IS being edited -->
-  <button mat-menu-item *ngIf="editingRowId === currentRow?._id && editingRowId !== null"
+  <button mat-menu-item *ngIf="canEditInventory && editingRowId === currentRow?._id && editingRowId !== null"
     class="inventory-action cancel-action"
     (click)="cancelEdit(currentRow!)" data-cy="cancel-action">
     <mat-icon>cancel</mat-icon>
     <span>Cancel</span>
   </button>
-  <button mat-menu-item class="inventory-action delete-action" (click)="confirmDelete(currentRow?._id!)">
+  <button mat-menu-item *ngIf="canDeleteInventory" class="inventory-action delete-action" (click)="confirmDelete(currentRow?._id!)">
     <mat-icon>delete</mat-icon>
     <span>Delete</span>
   </button>
 </mat-menu>
 
-<!-- Add Inventory Button -->
-<button mat-fab class="add-inventory-button" matTooltip="Add Inventory" matTooltipPosition="left"
-  (click)="addRow()" data-test="addInventoryButton">
-  <mat-icon class="md-24" aria-label="Add Inventory">add</mat-icon>
-</button>
+@if (canAddInventory) {
+  <!-- Add Inventory Button -->
+  <button mat-fab class="add-inventory-button" matTooltip="Add Inventory" matTooltipPosition="left"
+    (click)="addRow()" data-test="addInventoryButton">
+    <mat-icon class="md-24" aria-label="Add Inventory">add</mat-icon>
+  </button>
+}

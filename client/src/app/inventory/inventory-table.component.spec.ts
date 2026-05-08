@@ -16,6 +16,7 @@ import { Observable, of, throwError } from 'rxjs';
 import { MockInventoryService } from 'src/testing/inventory.service.mock';
 import { Inventory } from './inventory';
 import { InventoryTableComponent } from './inventory-table.component';
+import { AuthService } from '../auth/auth-service';
 
 /**
  * This file contains unit tests for the InventoryTableComponent, which is responsible for displaying a table of inventory items with sorting, pagination, and filtering capabilities. The tests cover the component's
@@ -45,6 +46,7 @@ describe('Inventory Table', () => {
           provide: InventoryService,
           useClass: MockInventoryService
         },
+        { provide: AuthService, useValue: { hasPermission: () => true } },
         provideRouter([])
       ] // Ensure provideHttpClientTesting is always present
     });
@@ -479,6 +481,7 @@ describe('Misbehaving Inventory Table', () => {
       ],
       providers: [
         { provide: InventoryService, useValue: inventoryServiceStub },
+        { provide: AuthService, useValue: { hasPermission: () => true } },
         provideRouter([]),
         provideHttpClient(),
         provideHttpClientTesting()

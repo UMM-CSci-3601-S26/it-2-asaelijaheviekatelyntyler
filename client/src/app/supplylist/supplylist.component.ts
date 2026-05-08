@@ -27,6 +27,7 @@ import { catchError, combineLatest, debounceTime, map, of, switchMap } from 'rxj
 import { SupplyList, AttributeOptions } from './supplylist';
 import { SupplyListService } from './supplylist.service';
 import { SettingsService } from '../settings/settings.service';
+import { AuthService } from '../auth/auth-service';
 
 @Component({
   selector: 'app-supplylist-component',
@@ -82,6 +83,19 @@ export class SupplyListComponent {
   private snackBar = inject(MatSnackBar);
   private supplylistService = inject(SupplyListService);
   private settingsService = inject(SettingsService);
+  private authService = inject(AuthService);
+
+  get canAddSupplyList(): boolean {
+    return this.authService.hasPermission('add_supply_list');
+  }
+
+  get canEditSupplyList(): boolean {
+    return this.authService.hasPermission('edit_supply_list');
+  }
+
+  get canDeleteSupplyList(): boolean {
+    return this.authService.hasPermission('delete_supply_list');
+  }
 
   // Constructor sets up an effect to update the table data whenever the serverFilteredInventory signal changes, and assigns the sorting and pagination components to the data source
   constructor() {
@@ -92,7 +106,7 @@ export class SupplyListComponent {
     effect(() => {
       this.school();
       this.grade.set(undefined);
-    }, { allowSignalWrites: true });
+    });
   }
 
   // Define signals for each filterable field in the inventory, and create observables from these signals to be used in the serverFilteredInventory effect
@@ -261,6 +275,7 @@ export class SupplyListComponent {
 
   /** Prompts confirmation then deletes an item, removing it from the local grouped data. */
   confirmDelete(id: string | undefined) {
+    if (!this.canDeleteSupplyList) return;
     if (!id) return;
     if (!confirm('Are you sure you want to delete this item?')) return;
     this.supplylistService.deleteSupplyList(id).subscribe({
@@ -287,11 +302,13 @@ export class SupplyListComponent {
   }
 
   startEdit(item: SupplyList) {
+    if (!this.canEditSupplyList) return;
     this.editingItemId = item._id ?? null;
     this.editingBackup = JSON.parse(JSON.stringify(item));
   }
 
   cancelEdit() {
+    if (!this.canEditSupplyList) return;
     if (this.editingBackup) {
       const idx = this.dataSource.data.findIndex(i => i._id === this.editingBackup!._id);
       if (idx !== -1) this.dataSource.data[idx] = this.editingBackup;
@@ -301,6 +318,7 @@ export class SupplyListComponent {
   }
 
   saveEdit(item: SupplyList) {
+    if (!this.canEditSupplyList) return;
     if (!item._id) return;
     this.supplylistService.editSupplyList(item._id, item).subscribe({
       next: () => {
