@@ -8,6 +8,7 @@ import { Observable, of, throwError } from 'rxjs';
 // Component and Dependencies
 import { LoginComponent } from './login.component';
 import { AuthService } from '../auth-service';
+import { FamilyPortalService } from '../../family/family-portal.service';
 
 /**
  * Tests for LoginComponent — covers component creation, form validation,
@@ -16,10 +17,14 @@ import { AuthService } from '../auth-service';
 describe('LoginComponent', () => {
   let component: LoginComponent;
   let fixture: ComponentFixture<LoginComponent>;
-  let authServiceMock: jasmine.SpyObj<Pick<AuthService, 'login'>>;
+  let authServiceMock: jasmine.SpyObj<Pick<AuthService, 'login' | 'isGuardian'>>;
+  let familyPortalServiceMock: jasmine.SpyObj<Pick<FamilyPortalService, 'getSummary'>>;
 
   beforeEach(waitForAsync(() => {
-    authServiceMock = jasmine.createSpyObj('AuthService', ['login']);
+    authServiceMock = jasmine.createSpyObj('AuthService', ['login', 'isGuardian']);
+    familyPortalServiceMock = jasmine.createSpyObj('FamilyPortalService', ['getSummary']);
+    authServiceMock.isGuardian.and.returnValue(false);
+    familyPortalServiceMock.getSummary.and.returnValue(of({ profileComplete: false, family: null }));
 
     TestBed.configureTestingModule({
       imports: [LoginComponent],
@@ -28,6 +33,7 @@ describe('LoginComponent', () => {
         provideHttpClientTesting(),
         provideRouter([]),
         { provide: AuthService, useValue: authServiceMock },
+        { provide: FamilyPortalService, useValue: familyPortalServiceMock },
       ],
     }).compileComponents();
   }));
@@ -73,7 +79,7 @@ describe('LoginComponent', () => {
   });
 
   it('should call authService.login with username and password on valid submit', () => {
-    authServiceMock.login.and.returnValue(of({ role: 'volunteer' }));
+    authServiceMock.login.and.returnValue(of('volunteer'));
     component.loginForm.setValue({ username: 'alice', password: 'password123' });
 
     component.onSubmit();
@@ -82,14 +88,40 @@ describe('LoginComponent', () => {
   });
 
   it('should navigate to / after a successful login', () => {
-    authServiceMock.login.and.returnValue(of({ role: 'volunteer' }));
+    authServiceMock.login.and.returnValue(of('volunteer'));
     const routerSpy = jasmine.createSpyObj('Router', ['navigate']);
-    (component as any).router = routerSpy;
+    (component as { router: typeof routerSpy }).router = routerSpy;
 
     component.loginForm.setValue({ username: 'alice', password: 'password123' });
     component.onSubmit();
 
     expect(routerSpy.navigate).toHaveBeenCalledWith(['/']);
+  });
+
+  it('should navigate guardian user to /family-portal when profile is complete', () => {
+    authServiceMock.login.and.returnValue(of('guardian'));
+    authServiceMock.isGuardian.and.returnValue(true);
+    familyPortalServiceMock.getSummary.and.returnValue(of({ profileComplete: true, family: null }));
+    const routerSpy = jasmine.createSpyObj('Router', ['navigate']);
+    (component as { router: typeof routerSpy }).router = routerSpy;
+
+    component.loginForm.setValue({ username: 'guardian', password: 'password123' });
+    component.onSubmit();
+
+    expect(routerSpy.navigate).toHaveBeenCalledWith(['/family-portal']);
+  });
+
+  it('should navigate guardian user to /family-portal/form when profile is incomplete', () => {
+    authServiceMock.login.and.returnValue(of('guardian'));
+    authServiceMock.isGuardian.and.returnValue(true);
+    familyPortalServiceMock.getSummary.and.returnValue(of({ profileComplete: false, family: null }));
+    const routerSpy = jasmine.createSpyObj('Router', ['navigate']);
+    (component as { router: typeof routerSpy }).router = routerSpy;
+
+    component.loginForm.setValue({ username: 'guardian', password: 'password123' });
+    component.onSubmit();
+
+    expect(routerSpy.navigate).toHaveBeenCalledWith(['/family-portal/form']);
   });
 
   it('should display the error message when login fails', () => {

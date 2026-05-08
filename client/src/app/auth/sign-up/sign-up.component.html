@@ -21,6 +21,17 @@
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Email</mat-label>
+          <input matInput formControlName="email" type="email" autocomplete="email">
+          <mat-icon matSuffix>mail</mat-icon>
+          @if (requiresEmail) {
+            <mat-hint>Required for volunteer accounts</mat-hint>
+          } @else {
+            <mat-hint>Optional now. Guardian email will be saved from the family form.</mat-hint>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
           <mat-label>Password</mat-label>
           <input matInput formControlName="password" [type]="hidePassword ? 'password' : 'text'" autocomplete="new-password">
           <button mat-icon-button matSuffix type="button" (click)="hidePassword = !hidePassword" [attr.aria-label]="'Toggle password'">

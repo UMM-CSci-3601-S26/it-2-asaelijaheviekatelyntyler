@@ -3,6 +3,7 @@ import { CommonModule } from "@angular/common";
 import { FormControl, FormGroup, FormsModule, Validators, ReactiveFormsModule } from "@angular/forms";
 import { RouterLink, Router, RouterModule } from "@angular/router";
 import { AuthService } from "../auth-service";
+import { FamilyPortalService } from "../../family/family-portal.service";
 import { MatCardModule } from "@angular/material/card";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
@@ -40,6 +41,7 @@ export class LoginComponent {
   hidePassword = true;
 
   authService = inject(AuthService);
+  familyPortalService = inject(FamilyPortalService);
   router = inject(Router);
 
   onSubmit() {
@@ -51,6 +53,15 @@ export class LoginComponent {
     const { username, password } = this.loginForm.value;
     this.authService.login(username, password).subscribe({
       next: () => {
+        if (this.authService.isGuardian()) {
+          this.familyPortalService.getSummary().subscribe({
+            next: summary => {
+              this.router.navigate([summary.profileComplete ? '/family-portal' : '/family-portal/form']);
+            },
+            error: () => this.router.navigate(['/family-portal/form'])
+          });
+          return;
+        }
         this.router.navigate(['/']);
       },
       error: (err) => {
