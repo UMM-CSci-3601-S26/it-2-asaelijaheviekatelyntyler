@@ -3,7 +3,10 @@ package umm3601.auth;
 import io.jsonwebtoken.Claims;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class JwtUtilsSpec {
   private String secret;
@@ -31,7 +34,7 @@ public class JwtUtilsSpec {
   void parsedTokenHasCorrectRole() {
     String token = JwtUtils.createToken("user123", "admin", secret);
     Claims claims = JwtUtils.parseToken(token, secret);
-    assertEquals("admin", claims.get("role", String.class));
+    assertEquals("admin", claims.get("systemRole", String.class));
   }
 
   @Test

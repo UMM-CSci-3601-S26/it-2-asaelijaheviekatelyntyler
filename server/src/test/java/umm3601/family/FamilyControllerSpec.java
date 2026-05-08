@@ -73,6 +73,7 @@ class FamilyControllerSpec {
   private FamilyController familyController;
 
   private ObjectId testFamilyId;
+  private ObjectId linkedGuardianUserId;
 
   private static MongoClient mongoClient;
   private static MongoDatabase db;
@@ -95,6 +96,9 @@ class FamilyControllerSpec {
 
   @Captor
   private ArgumentCaptor<Map<String, Object>> dashboardCaptor;
+
+  @Captor
+  private ArgumentCaptor<Object> objectCaptor;
 
   // Runs once before all the tests. This connects to a real MongoDB "test"
   // database so the controller is working with actual data instead of fake mocks.
@@ -182,9 +186,11 @@ class FamilyControllerSpec {
     );
 
     testFamilyId = new ObjectId();
+    linkedGuardianUserId = new ObjectId();
 
     Document specialFamily = new Document()
       .append("_id", testFamilyId)
+      .append("ownerUserId", linkedGuardianUserId.toHexString())
       .append("guardianName", "Bob Jones")
       .append("email", "bob@email.com")
       .append("address", "456 Oak Ave")
@@ -199,6 +205,17 @@ class FamilyControllerSpec {
 
     familyDocuments.insertMany(testFamilies);
     familyDocuments.insertOne(specialFamily);
+
+    MongoCollection<Document> userDocuments = db.getCollection("users");
+    userDocuments.drop();
+    userDocuments.insertOne(new Document()
+      .append("_id", linkedGuardianUserId)
+      .append("username", "guardian.for.bob")
+      .append("passwordHash", "hash")
+      .append("fullName", "Bob Jones")
+      .append("email", "guardian.for.bob@example.com")
+      .append("systemRole", "GUARDIAN")
+      .append("jobRole", null));
 
     familyController = new FamilyController(db, null);
   }
@@ -359,6 +376,10 @@ class FamilyControllerSpec {
     assertEquals(0,
       db.getCollection("families")
         .countDocuments(eq("_id", testFamilyId)));
+
+    assertEquals(0,
+      db.getCollection("users")
+        .countDocuments(eq("_id", linkedGuardianUserId)));
   }
 
   // Tries to delete a family that isn’t in the database. The controller should
@@ -377,8 +398,7 @@ class FamilyControllerSpec {
 
     verify(ctx).status(HttpStatus.NOT_FOUND);
 
-    assertTrue(exception.getMessage().contains(nonExistentId));
-    assertTrue(exception.getMessage().contains("Was unable to delete Family ID"));
+    assertTrue(exception.getMessage().contains("The requested family was not found"));
   }
 
   // Makes sure the dashboard stats include all the expected fields and that the
@@ -431,5 +451,71 @@ class FamilyControllerSpec {
     // Check Bob Jones (1 student)
     assertTrue(csv.contains(
       "\"Bob Jones\",\"bob@email.com\",\"456 Oak Ave\",\"2:00-3:00\",1"));
+  }
+
+  @Test
+  void requestDeleteAddsDeleteRequestMetadata() {
+    FamilyController.DeleteRequestBody requestBody = new FamilyController.DeleteRequestBody();
+    requestBody.message = "Family moved away";
+
+    when(ctx.pathParam("id")).thenReturn(testFamilyId.toString());
+    when(ctx.body()).thenReturn("{\"message\":\"Family moved away\"}");
+    when(ctx.bodyAsClass(FamilyController.DeleteRequestBody.class)).thenReturn(requestBody);
+
+    familyController.requestToDeleteFamily(ctx);
+
+    verify(ctx).status(HttpStatus.OK);
+
+    Document updated = db.getCollection("families")
+        .find(eq("_id", testFamilyId))
+        .first();
+
+    Document deleteRequest = updated.get("deleteRequest", Document.class);
+    assertEquals(true, deleteRequest.getBoolean("requested"));
+    assertEquals("Family moved away", deleteRequest.getString("message"));
+    assertEquals("test-user", deleteRequest.getString("requestedByUserId"));
+    assertTrue(deleteRequest.getString("requestedAt").contains("T"));
+  }
+
+  @SuppressWarnings("unchecked")
+  @Test
+  void getDeleteRequestsReturnsFamiliesWithPendingRequests() {
+    db.getCollection("families").updateOne(
+        eq("_id", testFamilyId),
+        new Document("$set", new Document("deleteRequest",
+            new Document("requested", true)
+                .append("message", "Needs cleanup")
+                .append("requestedByUserId", "test-user")
+                .append("requestedAt", "2026-04-24T12:00:00Z"))));
+
+    familyController.getDeleteRequests(ctx);
+
+    verify(ctx).json(objectCaptor.capture());
+    verify(ctx).status(HttpStatus.OK);
+
+    List<Family> requests = (List<Family>) objectCaptor.getValue();
+    assertEquals(1, requests.size());
+    assertEquals("Bob Jones", requests.get(0).guardianName);
+    assertEquals("Needs cleanup", requests.get(0).deleteRequest.message);
+  }
+
+  @Test
+  void restoreDeleteRequestClearsRequestMetadata() {
+    db.getCollection("families").updateOne(
+        eq("_id", testFamilyId),
+        new Document("$set", new Document("deleteRequest",
+            new Document("requested", true)
+                .append("message", "Needs cleanup"))));
+
+    when(ctx.pathParam("id")).thenReturn(testFamilyId.toString());
+
+    familyController.restoreFamilyDeleteRequest(ctx);
+
+    verify(ctx).status(HttpStatus.OK);
+
+    Document updated = db.getCollection("families")
+        .find(eq("_id", testFamilyId))
+        .first();
+    assertEquals(null, updated.get("deleteRequest"));
   }
 }

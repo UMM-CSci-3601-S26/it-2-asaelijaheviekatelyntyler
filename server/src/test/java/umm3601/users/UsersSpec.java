@@ -30,7 +30,7 @@ public class UsersSpec {
     user1._id = fakeIdString1;
     user2._id = fakeIdString1;
 
-    assert(user1.equals(user2));
+    assert (user1.equals(user2));
   }
 
   @Test
@@ -38,6 +38,6 @@ public class UsersSpec {
     user1._id = fakeIdString1;
     user2._id = fakeIdString2;
 
-    assert(!user1.equals(user2));
+    assert (!user1.equals(user2));
   }
 }

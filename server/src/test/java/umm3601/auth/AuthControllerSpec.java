@@ -3,11 +3,15 @@ package umm3601.auth;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -35,6 +39,7 @@ class AuthControllerSpec {
 
   private AuthController authController;
   private UsersService usersService;
+  private PermissionsService permissionsService;
 
   // Must be at least 32 bytes for HMAC-SHA256
   private static final String TEST_SECRET = "testSecretKeyThatIsLongEnoughForHS256Algorithm!!";
@@ -47,6 +52,9 @@ class AuthControllerSpec {
 
   @Captor
   private ArgumentCaptor<Cookie> cookieCaptor;
+
+  @Captor
+  private ArgumentCaptor<Map<String, Object>> responseCaptor;
 
   @BeforeAll
   static void setupAll() {
@@ -68,8 +76,10 @@ class AuthControllerSpec {
   void setupEach() throws IOException {
     MockitoAnnotations.openMocks(this);
     db.getCollection("users").drop();
+    db.getCollection("permissions").drop();
     usersService = new UsersService(db);
-    authController = new AuthController(usersService, TEST_SECRET);
+    permissionsService = new PermissionsService(db);
+    authController = new AuthController(usersService, TEST_SECRET, permissionsService);
   }
 
   // ---- Login ----
@@ -77,7 +87,7 @@ class AuthControllerSpec {
   @Test
   void loginSucceedsWithValidCredentials() {
     String hash = PasswordUtils.hashPassword("password123");
-    usersService.createUser("alice", hash, "Alice Smith", "volunteer");
+    usersService.createUser("alice", hash, "Alice Smith", "alice@example.com", Role.VOLUNTEER, "volunteer_base");
 
     AuthController.LoginRequest req = new AuthController.LoginRequest();
     req.username = "alice";
@@ -96,7 +106,7 @@ class AuthControllerSpec {
   @Test
   void loginReturnsRoleInResponseBody() {
     String hash = PasswordUtils.hashPassword("password123");
-    usersService.createUser("alice", hash, "Alice Smith", "volunteer");
+    usersService.createUser("alice", hash, "Alice Smith", "alice@example.com", Role.VOLUNTEER, "volunteer_base");
 
     AuthController.LoginRequest req = new AuthController.LoginRequest();
     req.username = "alice";
@@ -105,13 +115,41 @@ class AuthControllerSpec {
 
     authController.login(ctx);
 
-    verify(ctx).json(java.util.Map.of("role", "volunteer"));
+    verify(ctx).json(responseCaptor.capture());
+    Map<String, Object> payload = responseCaptor.getValue();
+    assertEquals("VOLUNTEER", payload.get("systemRole"));
+    assertEquals("volunteer_base", payload.get("jobRole"));
+  }
+
+  @Test
+  void loginSucceedsWhenVolunteerBaseHadSelfInheritanceSavedPreviously() {
+    db.getCollection("permissions").insertOne(new org.bson.Document()
+        .append("_id", "role-permissions")
+        .append("roles", new org.bson.Document()
+            .append("volunteer_base", new org.bson.Document()
+                .append("permissions", List.of("view_inventory"))
+                .append("inherits", List.of("volunteer_base")))));
+
+    String hash = PasswordUtils.hashPassword("password123");
+    usersService.createUser("alice", hash, "Alice Smith", "alice@example.com", Role.VOLUNTEER, "volunteer_base");
+
+    AuthController.LoginRequest req = new AuthController.LoginRequest();
+    req.username = "alice";
+    req.password = "password123";
+    when(ctx.bodyAsClass(AuthController.LoginRequest.class)).thenReturn(req);
+
+    authController.login(ctx);
+
+    verify(ctx).json(responseCaptor.capture());
+    Map<String, Object> payload = responseCaptor.getValue();
+    assertEquals("VOLUNTEER", payload.get("systemRole"));
+    assertEquals("volunteer_base", payload.get("jobRole"));
   }
 
   @Test
   void loginFailsWithWrongPassword() {
     String hash = PasswordUtils.hashPassword("correctPassword");
-    usersService.createUser("bob", hash, "Bob Jones", "volunteer");
+    usersService.createUser("bob", hash, "Bob Jones", "bob@example.com", Role.VOLUNTEER, "volunteer_base");
 
     AuthController.LoginRequest req = new AuthController.LoginRequest();
     req.username = "bob";
@@ -139,6 +177,7 @@ class AuthControllerSpec {
     req.username = "newuser";
     req.password = "password123";
     req.fullName = "New User";
+    req.email = "newuser@example.com";
     when(ctx.bodyAsClass(AuthController.SignupRequest.class)).thenReturn(req);
 
     authController.signup(ctx);
@@ -156,11 +195,15 @@ class AuthControllerSpec {
     req.username = "newuser";
     req.password = "password123";
     req.fullName = "New User";
+    req.email = "newuser@example.com";
     when(ctx.bodyAsClass(AuthController.SignupRequest.class)).thenReturn(req);
 
     authController.signup(ctx);
 
-    verify(ctx).json(java.util.Map.of("role", "volunteer"));
+    verify(ctx).json(responseCaptor.capture());
+    Map<String, Object> payload = responseCaptor.getValue();
+    assertEquals("VOLUNTEER", payload.get("systemRole"));
+    assertEquals("volunteer_base", payload.get("jobRole"));
   }
 
   @Test
@@ -169,6 +212,7 @@ class AuthControllerSpec {
     req.username = "newuser";
     req.password = "short";
     req.fullName = "New User";
+    req.email = "newuser@example.com";
     when(ctx.bodyAsClass(AuthController.SignupRequest.class)).thenReturn(req);
 
     assertThrows(BadRequestResponse.class, () -> authController.signup(ctx));
@@ -180,6 +224,7 @@ class AuthControllerSpec {
     req.username = "";
     req.password = "password123";
     req.fullName = "New User";
+    req.email = "newuser@example.com";
     when(ctx.bodyAsClass(AuthController.SignupRequest.class)).thenReturn(req);
 
     assertThrows(BadRequestResponse.class, () -> authController.signup(ctx));
@@ -191,6 +236,7 @@ class AuthControllerSpec {
     req.username = "newuser";
     req.password = "password123";
     req.fullName = null;
+    req.email = "newuser@example.com";
     when(ctx.bodyAsClass(AuthController.SignupRequest.class)).thenReturn(req);
 
     assertThrows(BadRequestResponse.class, () -> authController.signup(ctx));
@@ -199,12 +245,13 @@ class AuthControllerSpec {
   @Test
   void signupFailsWithDuplicateUsername() {
     String hash = PasswordUtils.hashPassword("password123");
-    usersService.createUser("taken", hash, "Existing User", "volunteer");
+    usersService.createUser("taken", hash, "Existing User", "taken@example.com", Role.VOLUNTEER, "volunteer_base");
 
     AuthController.SignupRequest req = new AuthController.SignupRequest();
     req.username = "taken";
     req.password = "password123";
     req.fullName = "New User";
+    req.email = "newuser@example.com";
     when(ctx.bodyAsClass(AuthController.SignupRequest.class)).thenReturn(req);
 
     assertThrows(BadRequestResponse.class, () -> authController.signup(ctx));
@@ -216,12 +263,15 @@ class AuthControllerSpec {
     req.username = "guardianuser";
     req.password = "password123";
     req.fullName = "Guardian User";
-    req.role = "guardian";
+    req.systemRole = Role.GUARDIAN;
     when(ctx.bodyAsClass(AuthController.SignupRequest.class)).thenReturn(req);
 
     authController.signup(ctx);
 
-    verify(ctx).json(java.util.Map.of("role", "guardian"));
+    verify(ctx).json(responseCaptor.capture());
+    Map<String, Object> payload = responseCaptor.getValue();
+    assertEquals("GUARDIAN", payload.get("systemRole"));
+    assertEquals(List.of("family_portal_access"), payload.get("permissions"));
   }
 
   @Test
@@ -230,12 +280,16 @@ class AuthControllerSpec {
     req.username = "adminattempt";
     req.password = "password123";
     req.fullName = "Admin Attempt User";
-    req.role = "admin";
+    req.email = "adminattempt@example.com";
+    req.systemRole = Role.ADMIN;
     when(ctx.bodyAsClass(AuthController.SignupRequest.class)).thenReturn(req);
 
     authController.signup(ctx);
 
-    verify(ctx).json(java.util.Map.of("role", "volunteer"));
+    verify(ctx).json(responseCaptor.capture());
+    Map<String, Object> payload = responseCaptor.getValue();
+    assertEquals("VOLUNTEER", payload.get("systemRole"));
+    assertEquals("volunteer_base", payload.get("jobRole"));
   }
 
   // ---- Logout ----
@@ -255,12 +309,40 @@ class AuthControllerSpec {
 
   @Test
   void meReturnsRoleForValidCookie() {
-    String token = JwtUtils.createToken("some-id", "admin", TEST_SECRET);
+    String hash = PasswordUtils.hashPassword("password123");
+    usersService.createUser("adminuser", hash, "Admin User", "admin@example.com", Role.ADMIN, null);
+    String token = JwtUtils.createToken(usersService.findByUsername("adminuser")._id, "volunteer", TEST_SECRET);
     when(ctx.cookie("auth_token")).thenReturn(token);
 
     authController.me(ctx);
 
-    verify(ctx).json(java.util.Map.of("role", "admin"));
+    verify(ctx).json(responseCaptor.capture());
+    Map<String, Object> payload = responseCaptor.getValue();
+    assertEquals("ADMIN", payload.get("systemRole"));
+    assertEquals(List.of("*"), payload.get("permissions"));
+  }
+
+  @Test
+  void meReturnsUpdatedVolunteerRoleFromDatabaseInsteadOfTokenClaims() {
+    String hash = PasswordUtils.hashPassword("password123");
+    usersService.createUser(
+      "volunteer1",
+      hash,
+      "Volunteer One",
+      "volunteer1@example.com",
+      Role.VOLUNTEER,
+      "volunteer_base");
+    String userId = usersService.findByUsername("volunteer1")._id;
+    String token = JwtUtils.createToken(userId, Role.VOLUNTEER, "volunteer_base", TEST_SECRET);
+    usersService.updateUserSystemRole("volunteer1", Role.ADMIN);
+    when(ctx.cookie("auth_token")).thenReturn(token);
+
+    authController.me(ctx);
+
+    verify(ctx).json(responseCaptor.capture());
+    Map<String, Object> payload = responseCaptor.getValue();
+    assertEquals("ADMIN", payload.get("systemRole"));
+    assertEquals(List.of("*"), payload.get("permissions"));
   }
 
   @Test
@@ -275,6 +357,113 @@ class AuthControllerSpec {
     when(ctx.cookie("auth_token")).thenReturn("invalid.token.value");
 
     assertThrows(UnauthorizedResponse.class, () -> authController.me(ctx));
+  }
+
+  // ---- Permissions ----
+
+  @Test
+  void getUserPermissionsReturnsWildcardForAdmin() {
+    when(ctx.attribute("systemRole")).thenReturn(Role.ADMIN);
+    when(ctx.attribute("jobRole")).thenReturn(null);
+
+    authController.getUserPermissions(ctx);
+
+    verify(ctx).json(responseCaptor.capture());
+    Map<String, Object> payload = responseCaptor.getValue();
+    assertEquals("ADMIN", payload.get("systemRole"));
+    assertEquals(List.of("*"), payload.get("permissions"));
+  }
+
+  @Test
+  void getUserPermissionsReturnsFamilyPortalForGuardian() {
+    when(ctx.attribute("systemRole")).thenReturn(Role.GUARDIAN);
+    when(ctx.attribute("jobRole")).thenReturn(null);
+
+    authController.getUserPermissions(ctx);
+
+    verify(ctx).json(responseCaptor.capture());
+    Map<String, Object> payload = responseCaptor.getValue();
+    assertEquals("GUARDIAN", payload.get("systemRole"));
+    assertEquals(List.of("family_portal_access"), payload.get("permissions"));
+  }
+
+  @Test
+  void getUserPermissionsReturnsEffectivePermissionsForVolunteer() {
+    RoleConfig customRole = new RoleConfig();
+    customRole.permissions = List.of("edit_inventory_item");
+    customRole.inherits = List.of("volunteer_base");
+    permissionsService.updateRole("inventory_manager", customRole);
+
+    when(ctx.attribute("systemRole")).thenReturn(Role.VOLUNTEER);
+    when(ctx.attribute("jobRole")).thenReturn("inventory_manager");
+
+    authController.getUserPermissions(ctx);
+
+    verify(ctx).json(responseCaptor.capture());
+    Map<String, Object> payload = responseCaptor.getValue();
+    @SuppressWarnings("unchecked")
+    List<String> permissions = (List<String>) payload.get("permissions");
+    assertTrue(permissions.contains("edit_inventory_item"));
+    assertTrue(permissions.contains("view_inventory"));
+  }
+
+  @Test
+  void upsertAndDeleteJobRoleWork() {
+    RoleConfig config = new RoleConfig();
+    config.permissions = List.of("view_settings");
+    config.inherits = List.of("volunteer_base");
+
+    when(ctx.pathParam("jobRole")).thenReturn("frontdesk");
+    when(ctx.bodyAsClass(RoleConfig.class)).thenReturn(config);
+
+    authController.upsertJobRole(ctx);
+    verify(ctx, atLeast(1)).status(200);
+    assertTrue(permissionsService.roleExists("frontdesk"));
+
+    authController.deleteJobRole(ctx);
+    verify(ctx, atLeast(2)).status(200);
+    assertEquals(false, permissionsService.roleExists("frontdesk"));
+  }
+
+  @Test
+  void deleteJobRoleRejectsVolunteerBase() {
+    when(ctx.pathParam("jobRole")).thenReturn("volunteer_base");
+
+    assertThrows(BadRequestResponse.class, () -> authController.deleteJobRole(ctx));
+  }
+
+  @Test
+  void assignVolunteerJobRoleUpdatesVolunteerUser() {
+    String hash = PasswordUtils.hashPassword("password123");
+    usersService.createUser("vol1", hash, "Volunteer One", "vol1@example.com", Role.VOLUNTEER, "volunteer_base");
+
+    RoleConfig config = new RoleConfig();
+    config.permissions = List.of("view_settings");
+    config.inherits = List.of("volunteer_base");
+    permissionsService.updateRole("frontdesk", config);
+
+    AuthController.AssignJobRoleRequest req = new AuthController.AssignJobRoleRequest();
+    req.jobRole = "frontdesk";
+    when(ctx.pathParam("username")).thenReturn("vol1");
+    when(ctx.bodyAsClass(AuthController.AssignJobRoleRequest.class)).thenReturn(req);
+
+    authController.assignVolunteerJobRole(ctx);
+
+    verify(ctx).status(200);
+    assertEquals("frontdesk", usersService.findByUsername("vol1").jobRole);
+  }
+
+  @Test
+  void assignVolunteerJobRoleRejectsUnknownRole() {
+    String hash = PasswordUtils.hashPassword("password123");
+    usersService.createUser("vol2", hash, "Volunteer Two", "vol2@example.com", Role.VOLUNTEER, "volunteer_base");
+
+    AuthController.AssignJobRoleRequest req = new AuthController.AssignJobRoleRequest();
+    req.jobRole = "does_not_exist";
+    when(ctx.pathParam("username")).thenReturn("vol2");
+    when(ctx.bodyAsClass(AuthController.AssignJobRoleRequest.class)).thenReturn(req);
+
+    assertThrows(BadRequestResponse.class, () -> authController.assignVolunteerJobRole(ctx));
   }
 }
 
