@@ -1,34 +1,20 @@
 // Packages
 package umm3601.family;
 
-// Static Imports
-import static com.mongodb.client.model.Filters.eq;
-
-// Java Imports
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-
-// Org Imports
-import org.bson.UuidRepresentation;
-import org.bson.types.ObjectId;
-import org.mongojack.JacksonMongoCollection;
-
-// Com Imports
 import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.result.DeleteResult;
-
-// IO Imports
+import org.bson.UuidRepresentation;
+import org.mongojack.JacksonMongoCollection;
 import io.javalin.Javalin;
-import io.javalin.http.BadRequestResponse;
-import io.javalin.http.NotFoundResponse;
 import io.javalin.http.Context;
 import io.javalin.http.HttpStatus;
-
-// Misc Imports
-import umm3601.Controller;
+import io.javalin.http.NotFoundResponse;
 import umm3601.middleware.AuthMiddleware;
+import umm3601.auth.HttpMethod;
+import umm3601.auth.RequirePermission;
+import umm3601.auth.Route;
+import umm3601.common.AuthContext;
+import umm3601.users.UsersService;
 
 /**
  * Controller for handling Family-related API routes.
@@ -45,27 +31,56 @@ import umm3601.middleware.AuthMiddleware;
  * rely on embedded student data.
  */
 
-public class FamilyController implements Controller {
+public class FamilyController {
 
   private static final String API_FAMILY = "/api/families";
   private static final String API_DASHBOARD = "/api/dashboard";
   private static final String API_FAMILY_BY_ID = "/api/families/{id}";
+  private static final String API_FAMILY_DELETE_REQUEST = "/api/families/{id}/delete-request";
+  private static final String API_FAMILY_DELETE_REQUESTS = "/api/families/delete-requests";
   private static final String API_FAMILY_EXPORT = "/api/families/export";
 
-  // Basic email validation regex
-  public static final String EMAIL_REGEX = "^[a-zA-Z0-9_!#$%&'*+/=?`{|}~^.-]+@[a-zA-Z0-9.-]+$";
+  private final FamilyService service;
+  private final UsersService usersService;
+  private final FamilyPolicy policy;
+  private final FamilyValidator validator;
 
-  private final JacksonMongoCollection<Family> familyCollection;
-  private final AuthMiddleware authMiddleware;
+  // Constructors
+  public FamilyController(JacksonMongoCollection<Family> familyCollection) {
+    this(new FamilyRepository(familyCollection), null);
+  }
 
+  // Backward-compatible constructor used by legacy tests.
+  public FamilyController(FamilyRepository repository) {
+    this(repository, null);
+  }
+
+  public FamilyController(FamilyRepository repository, UsersService usersService) {
+    this(new FamilyService(repository), usersService, new FamilyPolicy(), new FamilyValidator());
+  }
+
+  // Backward-compatible constructor used by legacy tests.
   public FamilyController(MongoDatabase database, AuthMiddleware authMiddleware) {
-    this.authMiddleware = authMiddleware;
-    // Connects to the "families" collection using Jackson for serialization
-    familyCollection = JacksonMongoCollection.builder().build(
+    this(
+      new FamilyService(new FamilyRepository(JacksonMongoCollection.builder().build(
         database,
         "families",
         Family.class,
-        UuidRepresentation.STANDARD);
+        UuidRepresentation.STANDARD))),
+      new UsersService(database),
+      new FamilyPolicy(),
+      new FamilyValidator());
+  }
+
+  public FamilyController(FamilyService service, FamilyPolicy policy, FamilyValidator validator) {
+    this(service, null, policy, validator);
+  }
+
+  public FamilyController(FamilyService service, UsersService usersService, FamilyPolicy policy, FamilyValidator validator) {
+    this.service = service;
+    this.usersService = usersService;
+    this.policy = policy;
+    this.validator = validator;
   }
 
   /**
@@ -76,33 +91,24 @@ public class FamilyController implements Controller {
    * - invalid ObjectId format
    * - non-existent family
    */
+  @Route(method = HttpMethod.GET, path = API_FAMILY_BY_ID)
+  @RequirePermission("view_family")
   public void getFamily(Context ctx) {
-    String id = ctx.pathParam("id");
-    Family family;
-
-    try {
-      family = familyCollection.find(eq("_id", new ObjectId(id))).first();
-    } catch (IllegalArgumentException e) {
-      throw new BadRequestResponse("The requested family id wasn't a legal Mongo Object ID.");
-    }
-    if (family == null) {
-      throw new NotFoundResponse("The requested family was not found");
-    } else {
-      ctx.json(family);
-      ctx.status(HttpStatus.OK);
-    }
+    policy.authorizeRead(AuthContext.from(ctx));
+    String id = validator.validateId(ctx.pathParam("id"));
+    ctx.json(service.getById(id));
+    ctx.status(HttpStatus.OK);
   }
 
   /**
    * GET /api/families
    * Returns all registered families.
    */
+  @Route(method = HttpMethod.GET, path = API_FAMILY)
+  @RequirePermission("view_families")
   public void getFamilies(Context ctx) {
-    ArrayList<Family> matchingFamilies = familyCollection
-        .find()
-        .into(new ArrayList<>());
-
-    ctx.json(matchingFamilies);
+    policy.authorizeList(AuthContext.from(ctx));
+    ctx.json(service.getAll());
     ctx.status(HttpStatus.OK);
   }
 
@@ -118,17 +124,16 @@ public class FamilyController implements Controller {
    * - Validate that grade/school fields are present
    * - Validate requestedSupplies against Supply collection
    */
+  @Route(method = HttpMethod.POST, path = API_FAMILY)
+  @RequirePermission("add_family")
   public void addNewFamily(Context ctx) {
+    policy.authorizeAdd(AuthContext.from(ctx));
     String body = ctx.body();
-
     Family newFamily = ctx.bodyValidator(Family.class)
-        .check(fam -> fam.email.matches(EMAIL_REGEX),
+        .check(fam -> fam.email != null && fam.email.matches(FamilyValidator.EMAIL_REGEX),
             "Family must have a valid email; body was " + body)
-        // Additional validation can be added here
         .get();
-
-    familyCollection.insertOne(newFamily);
-
+    service.create(newFamily);
     ctx.json(Map.of("id", newFamily._id));
     ctx.status(HttpStatus.CREATED);
   }
@@ -141,18 +146,65 @@ public class FamilyController implements Controller {
    * - the ID is invalid
    * - no family with that ID exists
    */
+  @Route(method = HttpMethod.DELETE, path = API_FAMILY_BY_ID)
+  @RequirePermission("delete_family")
   public void deleteFamily(Context ctx) {
-    String id = ctx.pathParam("id");
-    DeleteResult deleteResult = familyCollection.deleteOne(eq("_id", new ObjectId(id)));
-
-    if (deleteResult.getDeletedCount() != 1) {
+    policy.authorizeDelete(AuthContext.from(ctx));
+    String id = validator.validateId(ctx.pathParam("id"));
+    try {
+      Family family = service.getById(id);
+      service.delete(id);
+      if (usersService != null && family.ownerUserId != null && !family.ownerUserId.isBlank()) {
+        usersService.deleteGuardianById(family.ownerUserId);
+      }
+      ctx.status(HttpStatus.OK);
+    } catch (NotFoundResponse e) {
       ctx.status(HttpStatus.NOT_FOUND);
-      throw new NotFoundResponse(
-          "Was unable to delete Family ID"
-              + id
-              + "; perhaps illegal Family ID or an ID for an item not in the system?");
+      throw e;
     }
+  }
+
+  @Route(method = HttpMethod.POST, path = API_FAMILY_DELETE_REQUEST)
+  @RequirePermission("request_family_delete")
+  public void requestToDeleteFamily(Context ctx) {
+    AuthContext auth = AuthContext.from(ctx);
+    policy.authorizeRequestDelete(auth);
+    String id = validator.validateId(ctx.pathParam("id"));
+    String rawBody = ctx.body();
+    DeleteRequestBody requestBody = (rawBody == null || rawBody.isBlank()) ? null : ctx.bodyAsClass(DeleteRequestBody.class);
+    String message = requestBody == null || requestBody.message == null ? "" : requestBody.message.trim();
+    if (message.isBlank()) {
+      message = "Requested by volunteer";
+    }
+    try {
+      service.requestDeleteByVolunteer(id, message, auth.userId());
+      ctx.status(HttpStatus.OK);
+    } catch (NotFoundResponse e) {
+      ctx.status(HttpStatus.NOT_FOUND);
+      throw e;
+    }
+  }
+
+  @Route(method = HttpMethod.GET, path = API_FAMILY_DELETE_REQUESTS)
+  @RequirePermission("delete_family")
+  public void getDeleteRequests(Context ctx) {
+    policy.authorizeManageDeleteRequests(AuthContext.from(ctx));
+    ctx.json(service.getDeleteRequests());
     ctx.status(HttpStatus.OK);
+  }
+
+  @Route(method = HttpMethod.DELETE, path = API_FAMILY_DELETE_REQUEST)
+  @RequirePermission("delete_family")
+  public void restoreFamilyDeleteRequest(Context ctx) {
+    policy.authorizeManageDeleteRequests(AuthContext.from(ctx));
+    String id = validator.validateId(ctx.pathParam("id"));
+    try {
+      service.clearDeleteRequest(id);
+      ctx.status(HttpStatus.OK);
+    } catch (NotFoundResponse e) {
+      ctx.status(HttpStatus.NOT_FOUND);
+      throw e;
+    }
   }
 
   /**
@@ -169,29 +221,11 @@ public class FamilyController implements Controller {
    * - total students
    * - filterable for per district, grade, and school.
    */
+  @Route(method = HttpMethod.GET, path = API_DASHBOARD)
+  @RequirePermission("view_dashboard_stats")
   public void getDashboardStats(Context ctx) {
-    ArrayList<Family> families = familyCollection
-        .find()
-        .into(new ArrayList<>());
-
-    Map<String, Integer> studentsPerSchool = new HashMap<>();
-    Map<String, Integer> studentsPerGrade = new HashMap<>();
-
-    for (Family family : families) {
-      for (Family.StudentInfo student : family.students) {
-        // Count per school
-        studentsPerSchool.merge(student.school, 1, Integer::sum);
-
-        // Count per grade
-        studentsPerGrade.merge(student.grade, 1, Integer::sum);
-      }
-    }
-    Map<String, Object> result = new HashMap<>();
-    result.put("studentsPerSchool", studentsPerSchool);
-    result.put("studentsPerGrade", studentsPerGrade);
-    result.put("totalFamilies", families.size());
-
-    ctx.json(result);
+    policy.authorizeDashboard(AuthContext.from(ctx));
+    ctx.json(service.getDashboardStats());
   }
 
   /**
@@ -203,73 +237,27 @@ public class FamilyController implements Controller {
    * - requested supplies
    * - filtering options
    */
+  @Route(method = HttpMethod.GET, path = API_FAMILY_EXPORT)
+  @RequirePermission("export_families_csv")
   public void exportFamiliesAsCSV(Context ctx) {
-    List<Family> families = familyCollection.find().into(new ArrayList<>());
-
-    StringBuilder csv = new StringBuilder();
-
-    // CSV header row
-    csv.append("Guardian Name,Email,Address,Time Slot,Number of Students\n");
-
-    for (Family family : families) {
-      int studentCount = family.students != null ? family.students.size() : 0;
-
-      csv.append(String.format("\"%s\",\"%s\",\"%s\",\"%s\",%d\n",
-          family.guardianName,
-          family.email,
-          family.address,
-          family.timeSlot,
-          studentCount));
-    }
-
+    policy.authorizeExport(AuthContext.from(ctx));
     ctx.contentType("text/csv");
     ctx.header("Content-Disposition", "attachment; filename=families.csv");
     ctx.status(HttpStatus.OK);
-    ctx.result(csv.toString());
+    ctx.result(service.exportFamiliesCsv());
   }
 
-  /**
-   * Registers all API routes for this controller.
-   *
-   * Note: Specific routes (like /export and /dashboard)
-   * are placed BEFORE the {id} routes to avoid conflicts
-   * which our team experienced.
-   */
-  @Override
+  // Backward-compatible route registration used by legacy tests.
   public void addRoutes(Javalin server) {
-    server.get(API_FAMILY, ctx -> {
-      authMiddleware.handle(ctx);
-      AuthMiddleware.requireRole(ctx, "admin", "volunteer");
-      getFamilies(ctx);
-    });
-    server.post(API_FAMILY, ctx -> {
-      authMiddleware.handle(ctx);
-      AuthMiddleware.requireRole(ctx, "admin");
-      addNewFamily(ctx);
-    });
+    server.get(API_FAMILY, this::getFamilies);
+    server.post(API_FAMILY, this::addNewFamily);
+    server.get(API_FAMILY_EXPORT, this::exportFamiliesAsCSV);
+    server.get(API_DASHBOARD, this::getDashboardStats);
+    server.get(API_FAMILY_BY_ID, this::getFamily);
+    server.delete(API_FAMILY_BY_ID, this::deleteFamily);
+  }
 
-    // Specific routes FIRST
-    server.get(API_FAMILY_EXPORT, ctx -> {
-      authMiddleware.handle(ctx);
-      AuthMiddleware.requireRole(ctx, "admin");
-      exportFamiliesAsCSV(ctx);
-    });
-    server.get(API_DASHBOARD, ctx -> {
-      authMiddleware.handle(ctx);
-      AuthMiddleware.requireRole(ctx, "admin", "volunteer");
-      getDashboardStats(ctx);
-    });
-
-    // ID-based routes LAST
-    server.get(API_FAMILY_BY_ID, ctx -> {
-      authMiddleware.handle(ctx);
-      AuthMiddleware.requireRole(ctx, "admin", "volunteer", "guardian");
-      getFamily(ctx);
-    });
-    server.delete(API_FAMILY_BY_ID, ctx -> {
-      authMiddleware.handle(ctx);
-      AuthMiddleware.requireRole(ctx, "admin");
-      deleteFamily(ctx);
-    });
+  public static class DeleteRequestBody {
+    public String message;
   }
 }

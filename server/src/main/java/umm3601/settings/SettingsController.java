@@ -1,31 +1,18 @@
 // Package
 package umm3601.settings;
 
-// Static Imports
-import static com.mongodb.client.model.Filters.eq;
-
-// Java Imports
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
-// Org Imports
-import org.bson.Document;
+import com.mongodb.client.MongoDatabase;
 import org.bson.UuidRepresentation;
 import org.mongojack.JacksonMongoCollection;
-
-// Com Imports
-import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.model.UpdateOptions;
-
-// IO Imports
 import io.javalin.Javalin;
-import io.javalin.http.BadRequestResponse;
 import io.javalin.http.Context;
 import io.javalin.http.HttpStatus;
-
-// Misc Imports
-import umm3601.Controller;
+import umm3601.auth.HttpMethod;
+import umm3601.auth.RequirePermission;
+import umm3601.auth.RequireRole;
+import umm3601.auth.Role;
+import umm3601.auth.Route;
+import umm3601.common.AuthContext;
 import umm3601.middleware.AuthMiddleware;
 
 /**
@@ -39,7 +26,7 @@ import umm3601.middleware.AuthMiddleware;
  * Patching by section prevents one tab from overwriting another's changes.
  * All patch operations use upsert so the document is created on first write.
  */
-public class SettingsController implements Controller {
+public class SettingsController {
 
   // The fixed _id used for the singleton settings document
   public static final String SETTINGS_ID = "app-settings";
@@ -48,35 +35,47 @@ public class SettingsController implements Controller {
   private static final String API_SETTINGS_SCHOOLS = "/api/settings/schools";
   private static final String API_SETTINGS_TIME = "/api/settings/timeAvailability";
   private static final String API_SETTINGS_SUPPLY_ORDER = "/api/settings/supplyOrder";
+  private static final String API_SETTINGS_DRIVE_DAY = "/api/settings/driveDay";
 
-  private final JacksonMongoCollection<Settings> settingsCollection;
-  private final AuthMiddleware authMiddleware;
+  private final SettingsService service;
+  private final SettingsPolicy policy;
+  private final SettingsValidator validator;
 
+  public SettingsController(JacksonMongoCollection<Settings> settingsCollection) {
+    this(new SettingsRepository(settingsCollection));
+  }
+
+  public SettingsController(SettingsRepository repository) {
+    this(new SettingsService(repository), new SettingsPolicy(), new SettingsValidator());
+  }
+
+  // Backward-compatible constructor used by legacy tests.
   public SettingsController(MongoDatabase database, AuthMiddleware authMiddleware) {
-    this.authMiddleware = authMiddleware;
-    settingsCollection = JacksonMongoCollection.builder().build(
+    this(JacksonMongoCollection.builder().build(
         database,
         "settings",
         Settings.class,
-        UuidRepresentation.STANDARD);
+        UuidRepresentation.STANDARD));
+  }
+
+  public SettingsController(
+      SettingsService service,
+      SettingsPolicy policy,
+      SettingsValidator validator) {
+    this.service = service;
+    this.policy = policy;
+    this.validator = validator;
   }
 
   /**
    * GET /api/settings
    * Returns the settings document, or a safe default if none exists yet.
    */
+  @Route(method = HttpMethod.GET, path = API_SETTINGS)
+  @RequirePermission("view_settings")
   public void getSettings(Context ctx) {
-    Settings settings = settingsCollection.find(eq("_id", SETTINGS_ID)).first();
-    if (settings == null) {
-      settings = new Settings();
-      settings._id = SETTINGS_ID;
-      settings.schools = new ArrayList<>();
-      settings.timeAvailability = new Settings.TimeAvailabilityLabels();
-      settings.supplyOrder = new ArrayList<>();
-    } else if (settings.supplyOrder == null) {
-      settings.supplyOrder = new ArrayList<>();
-    }
-    ctx.json(settings);
+    policy.authorizeRead(AuthContext.from(ctx));
+    ctx.json(service.getSettings());
     ctx.status(HttpStatus.OK);
   }
 
@@ -84,22 +83,12 @@ public class SettingsController implements Controller {
    * PATCH /api/settings/schools
    * Replaces the schools list. Body: { "schools": [{ "name": "...", "abbreviation": "..." }] }
    */
+  @Route(method = HttpMethod.PATCH, path = API_SETTINGS_SCHOOLS)
+  @RequirePermission("edit_schools")
   public void updateSchools(Context ctx) {
-    Settings body = ctx.bodyAsClass(Settings.class);
-    if (body.schools == null) {
-      throw new BadRequestResponse("Request body must include a 'schools' array.");
-    }
-
-    // Convert to plain BSON Documents to avoid codec issues with nested POJOs in updates
-    List<Document> schoolDocs = body.schools.stream()
-        .map(s -> new Document("name", s.name).append("abbreviation", s.abbreviation))
-        .collect(Collectors.toList());
-
-    settingsCollection.updateOne(
-        eq("_id", SETTINGS_ID),
-        new Document("$set", new Document("schools", schoolDocs)),
-        new UpdateOptions().upsert(true));
-
+    policy.authorizeEdit(AuthContext.from(ctx));
+    Settings body = validator.validateSchools(ctx.bodyAsClass(Settings.class));
+    service.updateSchools(body);
     ctx.status(HttpStatus.OK);
   }
 
@@ -108,26 +97,12 @@ public class SettingsController implements Controller {
    * Replaces the supply item ordering used when generating checklists.
    * Body: { "supplyOrder": [{ "supplyId": "...", "status": "staged|unstaged|notGiven" }] }
    */
+  @Route(method = HttpMethod.PATCH, path = API_SETTINGS_SUPPLY_ORDER)
+  @RequirePermission("edit_supply_order")
   public void updateSupplyOrder(Context ctx) {
-    // Validate request body
-    Settings body = ctx.bodyAsClass(Settings.class);
-    // supplyOrder is required but can be an empty array
-    if (body.supplyOrder == null) {
-      throw new BadRequestResponse("Request body must include a 'supplyOrder' array.");
-    }
-
-    // Convert to plain BSON Documents
-    List<Document> orderDocs = body.supplyOrder.stream()
-        // Each entry must have an itemTerm and a valid status
-        .map(e -> new Document("itemTerm", e.itemTerm).append("status", e.status))
-        .collect(Collectors.toList());
-
-    // Update the supplyOrder field in the settings document
-    settingsCollection.updateOne(
-        eq("_id", SETTINGS_ID),
-        new Document("$set", new Document("supplyOrder", orderDocs)),
-        new UpdateOptions().upsert(true));
-
+    policy.authorizeEdit(AuthContext.from(ctx));
+    Settings body = validator.validateSupplyOrder(ctx.bodyAsClass(Settings.class));
+    service.updateSupplyOrder(body);
     ctx.status(HttpStatus.OK);
   }
 
@@ -136,44 +111,36 @@ public class SettingsController implements Controller {
    * Replaces the time availability labels.
    * Body: { "earlyMorning": "8:00–9:00 AM", "lateMorning": "...", ... }
    */
+  @Route(method = HttpMethod.PATCH, path = API_SETTINGS_TIME)
+  @RequirePermission("edit_time_availability")
   public void updateTimeAvailability(Context ctx) {
-    Settings.TimeAvailabilityLabels labels = ctx.bodyAsClass(Settings.TimeAvailabilityLabels.class);
-
-    Document taDoc = new Document()
-        .append("earlyMorning", labels.earlyMorning)
-        .append("lateMorning", labels.lateMorning)
-        .append("earlyAfternoon", labels.earlyAfternoon)
-        .append("lateAfternoon", labels.lateAfternoon);
-
-    settingsCollection.updateOne(
-        eq("_id", SETTINGS_ID),
-        new Document("$set", new Document("timeAvailability", taDoc)),
-        new UpdateOptions().upsert(true));
-
+    policy.authorizeEdit(AuthContext.from(ctx));
+    Settings.TimeAvailabilityLabels labels =
+        validator.validateTimeAvailability(ctx.bodyAsClass(Settings.TimeAvailabilityLabels.class));
+    service.updateTimeAvailability(labels);
     ctx.status(HttpStatus.OK);
   }
 
-  @Override
+  /**
+   * PATCH /api/settings/driveDay
+   * Updates drive-day details used in the family portal.
+   * Body: { "date": "2026-08-16", "message": "Please arrive 10 minutes early" }
+   */
+  @Route(method = HttpMethod.PATCH, path = API_SETTINGS_DRIVE_DAY)
+  @RequireRole(Role.ADMIN)
+  public void updateDriveDay(Context ctx) {
+    policy.authorizeEdit(AuthContext.from(ctx));
+    Settings.DriveDay driveDay = validator.validateDriveDay(ctx.bodyAsClass(Settings.DriveDay.class));
+    service.updateDriveDay(driveDay);
+    ctx.status(HttpStatus.OK);
+  }
+
+  // Backward-compatible route registration used by legacy tests.
   public void addRoutes(Javalin server) {
-    server.get(API_SETTINGS, ctx -> {
-      authMiddleware.handle(ctx);
-      AuthMiddleware.requireRole(ctx, "admin");
-      getSettings(ctx);
-    });
-    server.patch(API_SETTINGS_SCHOOLS, ctx -> {
-      authMiddleware.handle(ctx);
-      AuthMiddleware.requireRole(ctx, "admin");
-      updateSchools(ctx);
-    });
-    server.patch(API_SETTINGS_TIME, ctx -> {
-      authMiddleware.handle(ctx);
-      AuthMiddleware.requireRole(ctx, "admin");
-      updateTimeAvailability(ctx);
-    });
-    server.patch(API_SETTINGS_SUPPLY_ORDER, ctx -> {
-      authMiddleware.handle(ctx);
-      AuthMiddleware.requireRole(ctx, "admin");
-      updateSupplyOrder(ctx);
-    });
+    server.get(API_SETTINGS, this::getSettings);
+    server.patch(API_SETTINGS_SCHOOLS, this::updateSchools);
+    server.patch(API_SETTINGS_SUPPLY_ORDER, this::updateSupplyOrder);
+    server.patch(API_SETTINGS_TIME, this::updateTimeAvailability);
+    server.patch(API_SETTINGS_DRIVE_DAY, this::updateDriveDay);
   }
 }

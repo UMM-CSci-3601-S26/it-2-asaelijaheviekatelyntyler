@@ -1,12 +1,14 @@
-// Packages
+// Package declaration
 package umm3601.checklist;
 
 // Java Imports
 import java.util.List;
 
+// Org Imports
 import org.mongojack.Id;
 import org.mongojack.ObjectId;
 
+// Application Imports
 import umm3601.supplylist.SupplyList;
 
 @SuppressWarnings({"VisibilityModifier"})

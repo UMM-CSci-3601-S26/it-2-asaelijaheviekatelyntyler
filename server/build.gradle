@@ -12,6 +12,11 @@ plugins {
   id 'checkstyle'
 }
 
+// Keep build outputs outside the OneDrive-synced workspace to avoid transient
+// file locks from sync/indexing processes during test recompilation.
+def buildPathHash = Integer.toHexString(project.projectDir.absolutePath.hashCode())
+layout.buildDirectory = file("${gradle.gradleUserHomeDir}/it2-build/${rootProject.name}-${buildPathHash}")
+
 // Build and run the project with Java 21
 java {
   toolchain {
@@ -100,7 +105,7 @@ jacocoTestReport {
     // to somehow fake incoming HTTP requests), so we are just
     // leaving it out of the coverage report and the coverage limits.
     classDirectories.setFrom(files(classDirectories.files.collect {
-      fileTree(dir: it, exclude: ['umm3601/Main.class', 'umm3601/Server.class'])
+      fileTree(dir: it, exclude: ['umm3601/Main.class', 'umm3601/Server.class', 'umm3601/Bootstrap.class'])
     }))
   }
 }
@@ -129,7 +134,8 @@ jacocoTestCoverageVerification {
         minimum = 0.8
       }
 
-      // 80% of branches should be covered
+      // Branch coverage is also expected at 80% now that the refactored
+      // validation, policy, and workflow paths have dedicated test coverage.
       limit {
         counter = 'BRANCH'
         minimum = 0.8
@@ -149,7 +155,7 @@ jacocoTestCoverageVerification {
   // leaving it out of the coverage report and the coverage limits.
   afterEvaluate {
     classDirectories.setFrom(files(classDirectories.files.collect {
-      fileTree(dir: it, exclude: ['umm3601/Main.class', 'umm3601/Server.class'])
+      fileTree(dir: it, exclude: ['umm3601/Main.class', 'umm3601/Server.class', 'umm3601/Bootstrap.class'])
     }))
   }
 }

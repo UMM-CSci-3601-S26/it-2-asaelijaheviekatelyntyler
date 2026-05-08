@@ -29,6 +29,8 @@ public class Family {
   public String _id; // MongoDB ObjectId stored as a string
 
   // Guardian-level information (applies to the whole household)
+  public String ownerUserId;
+  public boolean profileComplete;
   public String guardianName;
   public String email;
   public String address;
@@ -39,6 +41,9 @@ public class Family {
 
   // Availability options for the family
   public AvailabilityOptions timeAvailability;
+
+  // Optional delete request metadata used by volunteer->admin approval flow.
+  public DeleteRequest deleteRequest;
 
   // Helper class for availability options
   public static class AvailabilityOptions {
@@ -54,6 +59,13 @@ public class Family {
     public String grade;
     public String school;
     public List<String> requestedSupplies;
+  }
+
+  public static class DeleteRequest {
+    public boolean requested;
+    public String message;
+    public String requestedByUserId;
+    public String requestedAt;
   }
 
   // Override equals and hashCode for proper comparison and hashing based on _id

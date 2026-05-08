@@ -5,4 +5,5 @@ for %%f in (seed\*.json) do (
   echo Seeding %%~nf from %%f in DB dev
   mongoimport --db=dev --collection=%%~nf --file=%%f --jsonArray
 )
-// line 6: "C:\Program Files\MongoDB\Tools\bin\mongoimport.exe" --db=dev --collection=%%~nf --file=%%f --jsonArray
+
+@REM line 6: "C:\Program Files\MongoDB\Tools\bin\mongoimport.exe" --db=dev --collection=%%~nf --file=%%f --jsonArray

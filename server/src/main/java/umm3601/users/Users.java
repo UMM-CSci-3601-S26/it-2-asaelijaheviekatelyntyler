@@ -2,6 +2,9 @@ package umm3601.users;
 
 import org.mongojack.Id;
 import org.mongojack.ObjectId;
+import umm3601.auth.Role;
+
+// Set users password to "password123"
 
 @SuppressWarnings({ "VisibilityModifier" })
 public class Users {
@@ -12,7 +15,10 @@ public class Users {
   public String username;
   public String passwordHash;
   public String fullName;
-  public String role;
+  public String email;
+
+  public Role systemRole; // admin, volunteer, guardian (now an enum)
+  public String jobRole;    // nullable unless volunteer
 
   @Override
   public boolean equals(Object obj) {

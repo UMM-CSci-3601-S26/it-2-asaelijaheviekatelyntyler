@@ -9,10 +9,10 @@ import org.bson.Document;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 
-import io.javalin.Javalin;
 import io.javalin.http.Context;
 import io.javalin.http.HttpStatus;
-import umm3601.Controller;
+import umm3601.auth.HttpMethod;
+import umm3601.auth.Route;
 
 /**
  * Controller that aggregates distinct vocabulary terms from both the
@@ -22,7 +22,7 @@ import umm3601.Controller;
  * Route:
  *  - GET /api/terms → returns distinct sorted values per shared field
  */
-public class TermsController implements Controller {
+public class TermsController {
 
   private static final String API_TERMS = "/api/terms";
 
@@ -40,6 +40,7 @@ public class TermsController implements Controller {
    * item, brand, color, size, type, material, and style — pulling values from
    * both the supplylist and inventory collections.
    */
+  @Route(method = HttpMethod.GET, path = API_TERMS)
   public void getTerms(Context ctx) {
     Terms terms = new Terms();
 
@@ -107,10 +108,5 @@ public class TermsController implements Controller {
       set.addAll(list);
     }
     return new ArrayList<>(set);
-  }
-
-  @Override
-  public void addRoutes(Javalin server) {
-    server.get(API_TERMS, this::getTerms);
   }
 }
