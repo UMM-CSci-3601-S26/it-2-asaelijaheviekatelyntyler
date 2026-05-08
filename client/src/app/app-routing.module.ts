@@ -1,17 +1,5 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { HomeComponent } from './home/home.component';
-import { OperatorDashComponent } from './operator-dash/operator-dash.component';
-import { FamilyViewComponent } from './family/family-view.component';
-import { AddFamilyComponent } from './family/add-family.component';
-import { InventoryTableComponent } from './inventory/inventory-table.component';
-import { SupplyListComponent } from './supplylist/supplylist.component';
-import { SettingsComponent } from './settings/settings.component';
-import { AddSupplyListComponent } from './supplylist/add-supplylist.component';
-import { ChecklistViewComponent } from './checklist/checklist-view.component';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { LoginComponent } from './auth/login/login.component';
-import { SignUpComponent } from './auth/sign-up/sign-up.component';
 import { AuthGuard } from './auth/auth.guard';
 import { RoleGuard } from './auth/role.guard';
 
@@ -36,26 +24,32 @@ import { RoleGuard } from './auth/role.guard';
 // Future: when email-invite links are added for guardians, the link will point
 // directly to /guardian-sign-up so no routing changes will be needed.
 const routes: Routes = [
-  {path: '', component: HomeComponent, title: 'Home'},
-  {path: 'login', component: LoginComponent, title: 'Login'},
-  {path: 'sign-up', component: SignUpComponent, title: 'Volunteer Sign Up'},
-  {path: 'guardian-sign-up', component: SignUpComponent, title: 'Guardian Sign Up'},
-  {path: 'dashboard', component: OperatorDashComponent, title: 'Operator Dashboard',
-    canActivate: [AuthGuard, RoleGuard], data: { roles: ['admin'] }},
-  {path: 'checklists', component: ChecklistViewComponent, title: 'Checklists',
-    canActivate: [AuthGuard, RoleGuard], data: { roles: ['admin', 'volunteer'] }},
-  {path: 'families', component: FamilyViewComponent, title: 'Families',
-    canActivate: [AuthGuard, RoleGuard], data: { roles: ['admin', 'volunteer'] }},
-  {path: 'families/new', component: AddFamilyComponent, title: 'Add Family',
-    canActivate: [AuthGuard, RoleGuard], data: { roles: ['admin'] }},
-  {path: 'inventory', component: InventoryTableComponent, title: 'Inventory',
-    canActivate: [AuthGuard, RoleGuard], data: { roles: ['admin', 'volunteer'] }},
-  {path: 'supplylist', component: SupplyListComponent, title: 'Supply List',
-    canActivate: [AuthGuard, RoleGuard], data: { roles: ['admin', 'volunteer', 'guardian'] }},
-  {path: 'settings', component: SettingsComponent, title: 'Settings',
-    canActivate: [AuthGuard, RoleGuard], data: { roles: ['admin'] }},
-  {path: 'supplylist/new', component: AddSupplyListComponent, title: 'Add Supply List Item',
-    canActivate: [AuthGuard, RoleGuard], data: { roles: ['admin'] }}
+  {path: '', loadComponent: () => import('./home/home.component').then(m => m.HomeComponent), title: 'Home'},
+  {path: 'login', loadComponent: () => import('./auth/login/login.component').then(m => m.LoginComponent), title: 'Login'},
+  {path: 'sign-up', loadComponent: () => import('./auth/sign-up/sign-up.component').then(m => m.SignUpComponent), title: 'Volunteer Sign Up'},
+  {path: 'guardian-sign-up', loadComponent: () => import('./auth/sign-up/sign-up.component').then(m => m.SignUpComponent), title: 'Guardian Sign Up'},
+  {path: 'family-portal', loadComponent: () => import('./family/family-portal-home.component').then(m => m.FamilyPortalHomeComponent), title: 'Family Portal',
+    canActivate: [AuthGuard, RoleGuard], data: { roles: ['GUARDIAN'], permissions: ['family_portal_access'] }},
+  {path: 'family-portal/form', loadComponent: () => import('./family/family-portal-form.component').then(m => m.FamilyPortalFormComponent), title: 'Family Form',
+    canActivate: [AuthGuard, RoleGuard], data: { roles: ['GUARDIAN'], permissions: ['family_portal_access'] }},
+  {path: 'dashboard', loadComponent: () => import('./operator-dash/operator-dash.component').then(m => m.OperatorDashComponent), title: 'Operator Dashboard',
+    canActivate: [AuthGuard, RoleGuard], data: { roles: ['ADMIN', 'VOLUNTEER'], permissions: ['view_dashboard_stats'] }},
+  {path: 'checklists', loadComponent: () => import('./checklist/checklist-view.component').then(m => m.ChecklistViewComponent), title: 'Checklists',
+    canActivate: [AuthGuard, RoleGuard], data: { roles: ['ADMIN', 'VOLUNTEER'], permissions: ['view_checklist'] }},
+  {path: 'families', loadComponent: () => import('./family/family-view.component').then(m => m.FamilyViewComponent), title: 'Families',
+    canActivate: [AuthGuard, RoleGuard], data: { roles: ['ADMIN', 'VOLUNTEER'], permissions: ['view_families'] }},
+  {path: 'families/new', loadComponent: () => import('./family/add-family.component').then(m => m.AddFamilyComponent), title: 'Add Family',
+    canActivate: [AuthGuard, RoleGuard], data: { roles: ['ADMIN', 'VOLUNTEER'], permissions: ['add_family'] }},
+  {path: 'inventory', loadComponent: () => import('./inventory/inventory-table.component').then(m => m.InventoryTableComponent), title: 'Inventory',
+    canActivate: [AuthGuard, RoleGuard], data: { roles: ['ADMIN', 'VOLUNTEER'], permissions: ['view_inventory'] }},
+  {path: 'supplylist', loadComponent: () => import('./supplylist/supplylist.component').then(m => m.SupplyListComponent), title: 'Supply List',
+    canActivate: [AuthGuard, RoleGuard], data: { roles: ['ADMIN', 'VOLUNTEER'], permissions: ['view_supply_lists'] }},
+  {path: 'settings', loadComponent: () => import('./settings/settings.component').then(m => m.SettingsComponent), title: 'Settings',
+    canActivate: [AuthGuard, RoleGuard], data: { roles: ['ADMIN', 'VOLUNTEER'], permissions: ['view_settings'] }},
+  {path: 'users', loadComponent: () => import('./users/users.component').then(m => m.UsersComponent), title: 'Users',
+    canActivate: [AuthGuard, RoleGuard], data: { roles: ['ADMIN'] }},
+  {path: 'supplylist/new', loadComponent: () => import('./supplylist/add-supplylist.component').then(m => m.AddSupplyListComponent), title: 'Add Supply List Item',
+    canActivate: [AuthGuard, RoleGuard], data: { roles: ['ADMIN', 'VOLUNTEER'], permissions: ['add_supply_list'] }}
 ];
 
 @NgModule({
@@ -63,9 +57,7 @@ const routes: Routes = [
     RouterModule.forRoot(routes)
   ],
   exports: [
-    RouterModule,
-    FormsModule,
-    ReactiveFormsModule
+    RouterModule
   ]
 })
 export class AppRoutingModule { }

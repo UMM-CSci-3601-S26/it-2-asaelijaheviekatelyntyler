@@ -11,41 +11,59 @@
         Home
       </a>
 
-      @if (authService.isAdmin()) {
+      @if (canAccessPath('/dashboard')) {
         <a mat-list-item routerLink="/dashboard" routerLinkActive="drawer-list-item-active" (click)="drawer.close()">
           <mat-icon matListItemIcon>dashboard</mat-icon>
           Dashboard
         </a>
       }
 
-      @if (authService.isAdmin() || authService.isVolunteer()) {
+      @if (canAccessPath('/checklists')) {
         <a mat-list-item routerLink="/checklists" routerLinkActive="drawer-list-item-active" (click)="drawer.close()">
           <mat-icon matListItemIcon>checklist</mat-icon>
           Checklists
         </a>
+      }
 
+      @if (canAccessPath('/families')) {
         <a mat-list-item routerLink="/families" routerLinkActive="drawer-list-item-active" (click)="drawer.close()">
           <mat-icon matListItemIcon>group</mat-icon>
           Families
         </a>
+      }
 
+      @if (canAccessPath('/inventory')) {
         <a mat-list-item routerLink="/inventory" routerLinkActive="drawer-list-item-active" (click)="drawer.close()">
           <mat-icon matListItemIcon>inventory</mat-icon>
           Inventory
         </a>
       }
 
-      @if (authService.loggedIn) {
+      @if (canAccessPath('/family-portal')) {
+        <a mat-list-item routerLink="/family-portal" routerLinkActive="drawer-list-item-active" (click)="drawer.close()">
+          <mat-icon matListItemIcon>family_restroom</mat-icon>
+          Family Portal
+        </a>
+      }
+
+      @if (canAccessPath('/supplylist')) {
         <a mat-list-item routerLink="/supplylist" routerLinkActive="drawer-list-item-active" (click)="drawer.close()">
           <mat-icon matListItemIcon>list</mat-icon>
           Supply List
         </a>
       }
 
-      @if (authService.isAdmin()) {
+      @if (canAccessPath('/settings')) {
         <a mat-list-item routerLink="/settings" routerLinkActive="drawer-list-item-active" (click)="drawer.close()">
           <mat-icon matListItemIcon>settings</mat-icon>
           Settings
+        </a>
+      }
+
+      @if (canAccessPath('/users')) {
+        <a mat-list-item routerLink="/users" routerLinkActive="drawer-list-item-active" (click)="drawer.close()">
+          <mat-icon matListItemIcon>supervisor_account</mat-icon>
+          Users
         </a>
       }
 
